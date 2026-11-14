@@ -2362,6 +2362,7 @@ function renderHome() {
   });
   bindNearby({
     btn: $("home-near"), box: $("home-near-list"), catId: null,
+    input: () => { const el = $("homeAddAddress"); return el ? el.value : ""; },
     onPick: (place, pick) => useHomePlace(place || {
       id: pick.placeId, displayName: pick.name, formattedAddress: pick.address,
       websiteURI: pick.website, types: [], addressComponents: null,
@@ -3315,6 +3316,7 @@ function setupAddressAutocomplete(f, isNewPlace, catId) {
   });
   bindNearby({
     btn: f.querySelector("#f-near"), box: f.querySelector("#f-near-list"),
+    input: () => { const el = f.querySelector("#f-address") || f.querySelector("#f-address-text"); return el ? el.value : ""; },
     catId: () => (f.querySelector("#f-category") ? f.querySelector("#f-category").value : catId),
     onPick: (place, pick) => applyPlaceToForm(f, place || {
       id: pick.placeId, displayName: pick.name, formattedAddress: pick.address,
@@ -3346,6 +3348,7 @@ function setupAddressGate(f, catId) {
   if (manualBtn) manualBtn.addEventListener("click", () => reveal(null));
   bindNearby({
     btn: f.querySelector("#f-near-gate"), box: f.querySelector("#f-near-gate-list"), catId,
+    input: () => { const el = f.querySelector("#f-address-gate"); return el ? el.value : ""; },
     onPick: (place, pick) => {
       const url = new URL("https://www.google.com/maps/search/");
       url.searchParams.set("api", "1"); url.searchParams.set("query", "Ort");
@@ -3730,21 +3733,46 @@ function fmtDistance(m) {
 // (Vorschlag, Ort eintragen, Ort bearbeiten, Startseite). catId steuert den
 // Typfilter; ohne catId wird nicht gefiltert.
 function nearBtnHtml(id) {
-  return `<button type="button" class="btn wide-btn near-btn" id="${id}">In meiner Nähe suchen</button><div class="near-list" id="${id}-list" hidden></div>`;
+  return `<button type="button" class="btn wide-btn near-btn" id="${id}">Suchen</button><div class="near-list" id="${id}-list" hidden></div>`;
 }
-function nearListHtml(list) {
-  return `<p class="near-title">In deiner Nähe</p>` + (list.length
+function nearListHtml(list, title) {
+  return `<p class="near-title">${esc(title || "In deiner Nähe")}</p>` + (list.length
     ? list.map((c, i) => `<button type="button" class="near-item" data-npick="${i}"><span class="ni-name">${esc(c.name)}</span><span class="ni-meta">${esc(c.type || "")}${c.dist != null ? (c.type ? " · " : "") + fmtDistance(c.dist) : ""}</span></button>`).join("")
     : `<p class="note">Hier ist gerade nichts in der Nähe erfasst. Such den Ort oben mit Google.</p>`);
 }
-async function runNearby(btn, box, catId) {
+// Freitext-Suche: „vietnamesisch Friedrichshagen", „köpenick", „bölschestr.".
+// Autocomplete kann das nicht (sie sagt nur Namen und Adressen voraus) — Text
+// Search versteht Art und Ort. Dieselbe Trefferliste, dieselbe Übernahme.
+async function searchTextCandidates(query, pos, max) {
+  if (!window.google?.maps?.importLibrary) return [];
+  const { Place } = await google.maps.importLibrary("places");
+  const fields = ["id", "displayName", "formattedAddress", "types", "addressComponents", "websiteURI", "primaryTypeDisplayName", "location"];
+  const req = { textQuery: query, fields, maxResultCount: max || 8 };
+  if (pos) req.locationBias = { center: { lat: pos.lat, lng: pos.lng }, radius: 20000 };
+  const r = await Place.searchByText(req);
+  return (r.places || []).map(p => {
+    const out = pickFromPlace(p);
+    const loc = p.location ? { lat: p.location.lat(), lng: p.location.lng() } : null;
+    if (loc) { out.lat = loc.lat; out.lng = loc.lng; }
+    out.dist = pos && loc ? placeDistance(pos, loc) : null;
+    return out;
+  });
+}
+async function runNearby(btn, box, catId, query) {
   if (!btn || btn.dataset.busy) return null;
   const cat = typeof catId === "function" ? catId() : catId;
   btn.dataset.busy = "1"; btn.disabled = true;
   try {
-    btn.textContent = "Standort wird gesucht …";
+    const q = String(query || "").trim();
     const pos = await currentPosition();
-    if (!pos) { box.hidden = false; box.innerHTML = `<p class="note">Standort nicht verfügbar. Such den Ort oben mit Google.</p>`; return null; }
+    if (q.length >= 2) {
+      btn.textContent = "Wird gesucht …";
+      const list = await searchTextCandidates(q, pos, 8);
+      box.hidden = false;
+      box.innerHTML = nearListHtml(list, `Treffer für „${q}"`);
+      return list;
+    }
+    if (!pos) { box.hidden = false; box.innerHTML = `<p class="note">Standort nicht verfügbar. Schreib oben, was du suchst.</p>`; return null; }
     btn.textContent = "Orte in deiner Nähe werden gesucht …";
     const list = await nearbyCandidates(pos, cat, 6);
     box.hidden = false;
@@ -3753,14 +3781,17 @@ async function runNearby(btn, box, catId) {
   } catch (e) {
     box.hidden = false; box.innerHTML = `<p class="note">Suche in der Nähe hat nicht geklappt. Such den Ort oben mit Google.</p>`;
     return null;
-  } finally { btn.disabled = false; btn.textContent = "In meiner Nähe suchen"; delete btn.dataset.busy; }
+  } finally { btn.disabled = false; btn.textContent = "Suchen"; delete btn.dataset.busy; }
 }
 // onPick(place, pick): `place` ist das geladene Google-Place (kann null sein,
 // wenn das Nachladen scheitert) — `pick` trägt Name/Adresse auf jeden Fall.
-function bindNearby({ btn, box, catId, onPick }) {
+function bindNearby({ btn, box, catId, onPick, input }) {
   if (!btn || !box) return;
   let list = [];
-  btn.addEventListener("click", async () => { list = (await runNearby(btn, box, catId)) || []; });
+  btn.addEventListener("click", async () => {
+    const q = typeof input === "function" ? String(input() || "") : "";
+    list = (await runNearby(btn, box, catId, q)) || [];
+  });
   box.addEventListener("click", async e => {
     const b = e.target.closest("[data-npick]"); if (!b) return;
     const pick = list[Number(b.dataset.npick)]; if (!pick) return;
@@ -3768,7 +3799,7 @@ function bindNearby({ btn, box, catId, onPick }) {
     try {
       const { Place } = await google.maps.importLibrary("places");
       const place = new Place({ id: pick.placeId });
-      await place.fetchFields({ fields: ["id", "formattedAddress", "displayName", "types", "addressComponents", "websiteURI", "editorialSummary", "priceLevel", "primaryTypeDisplayName"] });
+      await place.fetchFields({ fields: ["id", "formattedAddress", "displayName", "types", "addressComponents", "websiteURI", "editorialSummary", "priceLevel", "primaryTypeDisplayName", "location"] });
       onPick(place && place.id ? place : null, pick);
     } catch (err) { onPick(null, pick); }
   });
@@ -3820,6 +3851,7 @@ function buildSuggest(catId) {
   });
   bindNearby({
     btn: f.querySelector("#s-near"), box: f.querySelector("#s-near-list"), catId,
+    input: () => { const el = f.querySelector("#s-address"); return el ? el.value : ""; },
     onPick: (place, pick) => { state.suggestPick = place ? pickFromPlace(place) : pick; paint(); }
   });
   f.addEventListener("click", e => {
@@ -4370,7 +4402,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.145";
+const APP_VERSION = "1.0.146";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
