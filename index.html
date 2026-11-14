@@ -1248,9 +1248,46 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const fmt = x => x.toFixed(2).replace(".", ",");
 
 // Kiez: der Teil vor einer Klammer, z. B. „Friedrichshagen (Bölschestraße 44)“ → „Friedrichshagen“.
+// Straße und Hausnummer aus einer Adresse lesen — für Orte, denen der Stadtteil
+// fehlt (Google liefert z. B. für die Bölschestraße nur den Bezirk).
+function streetOf(address) {
+  const teile = String(address || "").split(",");
+  for (const t of teile) {
+    const m = t.match(/([A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß.\-\s]*?(?:straße|str\.|weg|platz|allee|damm|ufer|gasse|ring|chaussee))\s*(\d+[a-zA-Z]?)?/i);
+    if (m) return { name: m[1].trim().toLowerCase(), no: parseInt(m[2] || "0", 10) || 0 };
+  }
+  return null;
+}
+// Fehlt der Stadtteil, gilt der Stadtteil des nächsten erfassten Ortes in
+// derselben Straße (nächstgelegene Hausnummer). Das ist eine Ableitung, keine
+// Änderung der Daten — sobald jemand den Ortsteil einträgt, gilt dieser.
+const _kiezStreets = new Map();
+let _kiezStreetSig = -1;
+function kiezFromStreet(p) {
+  if (_kiezStreetSig !== state.places.length) { _kiezStreets.clear(); _kiezStreetSig = state.places.length; }
+  const key = cityOf(p) + "|" + p.id;
+  if (_kiezStreets.has(key)) return _kiezStreets.get(key);
+  const s = streetOf(p.address);
+  let best = null;
+  if (s) {
+    state.places.forEach(q => {
+      if (q.id === p.id || cityOf(q) !== cityOf(p)) return;
+      const k = String(q.kiez || "").split(" (")[0].trim();
+      if (!k) return;
+      const s2 = streetOf(q.address);
+      if (!s2 || s2.name !== s.name) return;
+      const d = Math.abs(s2.no - s.no);
+      if (!best || d < best.d) best = { k, d };
+    });
+  }
+  const out = best ? best.k : "";
+  _kiezStreets.set(key, out);
+  return out;
+}
 function kiezOf(p) {
   const k = String(p.kiez || "").split(" (")[0].trim();
-  return k === "Berlin" || k === "Freiburg" || k === "Tübingen" ? "" : k;
+  if (k === "Berlin" || k === "Freiburg" || k === "Tübingen") return "";
+  return k || kiezFromStreet(p);
 }
 // Orte außerhalb Berlins. Neue Orte hier ergänzen, sonst stehen sie unter „Berlin“.
 const UMLAND = new Set(["Schöneiche", "Schöneiche bei Berlin", "Erkner", "Woltersdorf", "Rüdersdorf", "Rüdersdorf bei Berlin", "Zeuthen", "Eichwalde", "Schulzendorf", "Potsdam", "Kleinmachnow", "Teltow", "Falkensee", "Hoppegarten", "Neuenhagen", "Fredersdorf", "Petershagen", "Königs Wusterhausen", "Bernau", "Oranienburg"]);
@@ -4425,7 +4462,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.149";
+const APP_VERSION = "1.0.150";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
