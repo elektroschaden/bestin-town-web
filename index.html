@@ -2232,8 +2232,8 @@ function renderHome() {
   const cityEmpty = !state.places.some(p => cityOf(p) === state.city && CATS[p.category]);
   // Bei aktiver Suche nur die Treffer: kein Spiel, kein Pate, keine Vorschläge.
   // Drei Ebenen, drei Aufgaben: Stadt = Krone, Ort = Tagesfrage.
-  // Stadtweit nur dann ein Duell, wenn zwei Orte punktgleich an der Spitze stehen.
-  let html = filtering ? "" : (state.kiez ? eoBlock(eoCatToday()) : stechenBlock());
+  // Stadtweit nie ein Duell — auch nicht bei Gleichstand an der Spitze.
+  let html = filtering ? "" : (state.kiez ? eoBlock(eoCatToday()) : "");
   if (!filtering && !state.kiez) {
     // Darunter, stadtweit: die Krone. In meiner Nähe ist ein eigener Ort —
     // dort zaehlt der beste Ort im Umkreis, nicht die vorher gewaehlte Stadt.
@@ -2877,16 +2877,6 @@ function upDuelBlock(cat, precomputed) {
 }
 // Best in Town: die eine Location der Stadt, unabhängig von der Rubrik.
 // Kandidat ist jeder Ort der Stadt; entschieden wird über die Punkte.
-// Stechen: stehen zwei Orte punktgleich vorn, entscheidet ein Duell zwischen
-// genau diesen beiden — die Stimme gibt den Ausschlag für den Titel.
-function stechenBlock() {
-  if (!state.loaded) return "";
-  const all = ranked(state.places.filter(p => cityOf(p) === state.city && CATS[p.category]).map(p => ({ p, ...stat(p) })));
-  if (all.length < 2) return "";
-  const a = all[0], b = all[1];
-  if (!a.score || a.score !== b.score) return "";
-  return eoBlock(null, { a: a.p, b: b.p, cat: a.p.category === b.p.category ? a.p.category : "" });
-}
 function bestInTown() {
   const all = state.places.filter(p => cityOf(p) === state.city);
   if (!all.length) return null;
@@ -4402,7 +4392,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.146";
+const APP_VERSION = "1.0.147";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
