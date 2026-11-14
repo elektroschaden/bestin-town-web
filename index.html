@@ -348,8 +348,8 @@ body.has-homebar { padding-bottom: 110px; }
 .share-circle:hover { background: #33694F; }
 .share-circle:active { transform: scale(.94); }
 .share-circle svg { width: 20px; height: 20px; }
-.winner .share-circle { background: rgba(233,196,106,.16); color: var(--gold); }
-.winner .share-circle:hover { background: rgba(233,196,106,.26); }
+.winner .share-circle { background: transparent; color: var(--gold); }
+.winner .share-circle:hover { background: rgba(233,196,106,.14); }
 .share-sheet { position: fixed; inset: 0; z-index: 80; background: rgba(21,38,31,.45); display: grid; align-items: end; justify-items: center; padding: 12px; animation: fade .15s ease both; }
 @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
 .ss-card { width: min(440px, 100%); background: var(--surface); border-radius: 20px; padding: 18px 16px 14px; display: grid; gap: 10px;
@@ -650,10 +650,12 @@ body.has-homebar { padding-bottom: 110px; }
    Nur Platz 1 bleibt eine Karte — das Schmuckstück der Liste. */
 .place:not(.is-first) {
   background: none; border: 0; border-radius: 0; box-shadow: none;
-  border-bottom: 1px solid var(--line); padding: 14px 2px 15px;
+  border-bottom: 1px solid var(--line); padding: 18px 16px;
 }
 .ranking > .place:not(.is-first):last-child { border-bottom: 0; }
 .place:not(.is-first) .votes-pill { background: none; padding: 0; color: var(--muted); }
+/* Gleiche Spaltenbreite wie die grüne Karte, damit Name und Text auf einer Kante stehen. */
+.place:not(.is-first) .place-head .rank { width: 26px; }
 .place:not(.is-first) .card-actions { border-top-color: var(--line); }
 /* Platz 1 ist die kleine grüne Siegerkarte — in jeder Rubrik-Liste, ob stadtweit
    oder im Ort. Goldene 1, weiße Schrift, sonst dieselbe Bauform wie die Nachbarn. */
@@ -676,8 +678,8 @@ body.has-homebar { padding-bottom: 110px; }
 .place.is-first .share-act { color: var(--gold); border-color: rgba(246,241,231,.4); }
 .place.is-first .price .dim { color: rgba(246,241,231,.7) !important; }
 .place.is-first .kiez-name, .place.is-first .meta { color: rgba(246,241,231,.82) !important; }
-.place.is-first .share-circle { background: rgba(246,241,231,.16); color: var(--gold); }
-.place.is-first .share-circle:hover { background: rgba(246,241,231,.26); }
+.place.is-first .share-circle { background: transparent; color: var(--gold); }
+.place.is-first .share-circle:hover { background: rgba(246,241,231,.12); }
 .place.is-first .tag { color: rgba(246,241,231,.92); border-color: rgba(246,241,231,.42); }
 .place.is-first .reason.missing { color: rgba(246,241,231,.6) !important; }
 .place.dragging { position: relative; z-index: 5; box-shadow: 0 8px 24px rgba(0,0,0,.25); animation: none; }
@@ -4675,7 +4677,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.167";
+const APP_VERSION = "1.0.168";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
