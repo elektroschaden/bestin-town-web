@@ -2827,12 +2827,12 @@ function placeCard(p, rankNo, n, score, move, hero) {
         <button type="button" class="mv-btn" data-move-up="${p.id}" data-move-with="${move.up || ""}" aria-label="Nach oben" title="Nach oben">↑</button>
         <button type="button" class="mv-btn" data-move-down="${p.id}" data-move-with="${move.down || ""}" aria-label="Nach unten" title="Nach unten">↓</button>
       </div>` : ""}
-      ${state.canEdit ? `<div class="card-actions">
+      ${(state.db && state.uid) || state.canEdit ? `<div class="card-actions">
         ${state.db && state.uid ? `<button type="button" class="act${confirmDue(p) ? " due" : ""}" data-visit-open="${p.id}">Heute besucht</button>` : ""}
-        <button type="button" class="act icon-act" data-edit="${p.id}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>
-        ${state.confirmDelete === p.id
+        ${state.canEdit ? `<button type="button" class="act icon-act" data-edit="${p.id}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>` : ""}
+        ${state.canEdit ? (state.confirmDelete === p.id
           ? `<button type="button" class="act danger" data-del="${p.id}">Wirklich löschen</button><button type="button" class="act" data-cancel-del>Abbrechen</button>`
-          : `<button type="button" class="act icon-act danger" data-ask-del="${p.id}" title="Löschen" aria-label="Löschen">−</button>`}
+          : `<button type="button" class="act icon-act danger" data-ask-del="${p.id}" title="Löschen" aria-label="Löschen">−</button>`) : ""}
       </div>` : ""}
     </div>` : ""}
   </li>`;
@@ -2920,6 +2920,17 @@ function crownCard(p, score) {
     ${x ? `<p class="crown-quote">${x.quote ? `„${esc(x.text)}“` : esc(x.text)}</p>` : ""}
     <div class="crown-links">${(() => { const cat = CATS[p.category]; const k = kiezOf(p); const bits = [cat ? cat.name : "", k].filter(Boolean); return bits.length ? `<span class="crown-kiez">${esc(bits.join(" · "))}</span>` : ""; })()}<span>${linksOf(p)}</span>${shareAct(p.id)}</div>
   </article>`;
+}
+// Vorschläge kommen erst, wenn die Rolle feststeht — und sie kann sich später
+// ändern (Anmeldung). Deshalb einmal anhängen und danach nie wieder.
+function watchSuggestions(db) {
+  if (!db || state._sugWatch) return;
+  state._sugWatch = true;
+  db.collection("suggestions").onSnapshot(snap => {
+    state.suggestions = [];
+    snap.docs.forEach(d => (d.data().items || []).forEach(x => state.suggestions.push(Object.assign({}, x, { id: d.id + "::" + x.sid }))));
+    scheduleRender(); cacheSoon();
+  }, err => { /* Vorschläge nicht lesbar */ });
 }
 function renderCategory(cat) {
   const noTier = NO_TIER.has(cat.id);
@@ -4414,7 +4425,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.148";
+const APP_VERSION = "1.0.149";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
@@ -4872,6 +4883,7 @@ async function refreshRole(cloud) {
   // zurück. Die Trennung der Rollen bleibt davon unberührt: Rechte hängen an
   // der Rolle aus public.profiles, nicht am Gerät.
   state.editing = state.role === "supervisor" || state.role === "pate";
+  if (state.editor) watchSuggestions(cloud.db);
   if (state.role === "supervisor") { state.mode = "guest"; state.asPate = null; }
   else if (state.role === "pate") {
     state.mode = "guest";
@@ -5045,12 +5057,6 @@ function scheduleRender() {
     state.trustedLegacy = new Set(snap.docs.map(d => d.id));
     seen("trustedLegacy"); scheduleRender(); cacheSoon();
   }, err => { seen("trustedLegacy"); /* Alte Freigaben (vor Cloud-Umstellung) nicht lesbar */ });
-  if (state.editor) {
-    db.collection("suggestions").onSnapshot(snap => {
-      state.suggestions = [];
-      snap.docs.forEach(d => (d.data().items || []).forEach(x => state.suggestions.push(Object.assign({}, x, { id: d.id + "::" + x.sid }))));
-      scheduleRender();
-    }, err => { /* Vorschläge nicht lesbar */ });
-  }
+  if (state.editor) watchSuggestions(db);
 })();
 </script>
