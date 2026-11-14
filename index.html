@@ -165,6 +165,16 @@ h1, h2, h3 { font-weight: 400; }
 .eo2-sharebtn svg { width: 15px; height: 15px; }
 /* Rubriken als Karte: Name, Punktlinie, Preis; darunter Rubrik und Satz */
 .karte { display: flex; flex-direction: column; }
+/* Fünf Gruppen als Kacheln: der erste Blick in einem Ort. */
+.gtiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gtile { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 96px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 13px;
+  font: inherit; color: inherit; text-align: left; cursor: pointer; box-shadow: var(--shadow); }
+.gtile b { font-family: var(--font-display); font-weight: 400; font-size: 16px; line-height: 1.15; }
+.gtile small { font-size: 11px; color: var(--muted); }
+.gtile svg { color: var(--deep); }
+.gtile.off { opacity: .45; cursor: default; box-shadow: none; }
+.gtile:not(.off):active { transform: scale(.99); }
 .k-row.win { grid-template-columns: auto minmax(0,1fr) auto; align-items: center; column-gap: 14px;
   background: linear-gradient(160deg, #1F4B37, #15381F); border-radius: 18px; color: #FFFFFF;
   padding: 16px 14px; margin-bottom: 10px; box-shadow: 0 0 0 1.5px rgba(233,196,106,.55), 0 14px 30px -16px rgba(0,0,0,.55); }
@@ -1234,6 +1244,7 @@ function setWhere(city, kiez) {
     state.form = null; state.confirmDelete = null; state.pateForm = null;
   }
   state.kiez = kiez || ""; saveKiez(state.kiez);
+  state.group = "";
   normalizeWhere();
   state.pending = null; state.whereOpen = false; state.whereCity = null;
   render();
@@ -1243,7 +1254,7 @@ const state = {
   db: null, uid: null, canEdit: false, canVote: false,
   area: "alle", query: "", adminOpen: false, tierByCat: {}, tagByCat: {}, formTags: [], duels: {}, duelVotes: [], eoDraft: null, eoBusy: false, eoCur: null, eoPinSeen: false, shift: null, form: null, confirmDelete: null, dragging: false, editing: false, sessionKnown: false, showJoin: false, pateSelf: false, opens: 0, opensCounted: false, near: null, nearRadius: 5000, nearBusy: false,
   busy: false, pending: null, note: "",
-  city: loadCity(), kiez: loadKiez(), suggestions: [], trusted: new Set(), trustedLegacy: new Set(), open: new Set(), paten: [], pateForm: null, suggest: null, thanks: false, nextForm: null
+  city: loadCity(), kiez: loadKiez(), group: "", suggestions: [], trusted: new Set(), trustedLegacy: new Set(), open: new Set(), paten: [], pateForm: null, suggest: null, thanks: false, nextForm: null
 };
 function loadKiez() { try { return localStorage.getItem("bit-kiez") || ""; } catch (e) { return ""; } }
 function saveKiez(k) { try { if (k) localStorage.setItem("bit-kiez", k); else localStorage.removeItem("bit-kiez"); } catch (e) {} }
@@ -2298,14 +2309,47 @@ function winRow(id, x) {
     ${CAT_ICON[id] || ""}
   </a>`;
 }
+// Fünf Gruppen als Kacheln — der erste Blick in einem Ort.
+const GROUP_ICON = {
+  essen: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 3v8a2 2 0 0 0 4 0V3M9 11v10M17 3c-2 2-2 5 0 7v11"/></svg>`,
+  kultur: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M6 6v12h12V6M9 10h6"/></svg>`,
+  ausgehen: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.2 5.6L20 9.7l-4 3.8.9 5.5L12 16.4 7.1 19l.9-5.5-4-3.8 5.8-1.1z"/></svg>`,
+  shopping: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 8h14l-1.5 11h-11zM9 8V6a3 3 0 0 1 6 0v2"/></svg>`,
+  uebernachten: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6M3 18h18M7 18v3M17 18v3"/></svg>`
+};
+// Kachel wählen und zurück — einmal angehängt, überlebt jeden Neuaufbau.
+document.addEventListener("click", e => {
+  const t = e.target && e.target.closest ? e.target.closest("[data-group]") : null;
+  if (t && !t.disabled) { state.group = t.dataset.group; render(); return; }
+  const b = e.target && e.target.closest ? e.target.closest("[data-group-back]") : null;
+  if (b) { state.group = ""; render(); }
+});
+function groupTiles() {
+  const heute = eoGroupToday();
+  return `<section class="gtiles" aria-label="Gruppen">${AREAS.map(a => {
+    const n = a.cats.filter(([id]) => placesOf(id).length).length;
+    const off = n === 0;
+    const zusatz = off ? "noch leer" : `${n} ${n === 1 ? "Rubrik" : "Rubriken"}${a.id === heute ? " · heute im Duell" : ""}`;
+    return `<button type="button" class="gtile${off ? " off" : ""}" data-group="${a.id}"${off ? " disabled" : ""}>
+      ${GROUP_ICON[a.id] || ""}
+      <b>${esc(a.name)}</b>
+      <small>${zusatz}</small>
+    </button>`;
+  }).join("")}</section>`;
+}
 function renderHome() {
   const filled = Object.keys(CATS).filter(id => placesOf(id).length).length;
   const canSuggest = !state.canEdit && state.db && state.canVote;
   const f = parseQuery(state.query), tagSel = f.tags || [];
   const filtering = !!(f.cats.size || tagSel.length || f.words.length);
+  // In einem Ort führt der erste Blick auf die fünf Gruppen; erst die gewählte
+  // Gruppe zeigt ihre Rubriken. Bei aktiver Suche bleibt die flache Liste.
+  const gruppenAnsicht = !filtering && !!state.kiez && !state.group;
+  const aktiveGruppe = (!filtering && state.kiez && state.group) ? AREAS.find(a => a.id === state.group) : null;
   let rows = "";
   CAT_ORDER.forEach(id => {
     if (!CATS[id] || (f.cats.size && !f.cats.has(id))) return;
+    if (aktiveGruppe && CATS[id].area.id !== aktiveGruppe.id) return;
     let list = ranked(placesOf(id).map(p => ({ p, ...stat(p) })));
     if (state.near) list = list.filter(x => { const d = nearDist(x.p); return d != null && d <= state.nearRadius; });
     const i = list.findIndex(x => tagSel.every(t => tagsOf(x.p).includes(t)) && f.words.every(w => textHas(x.p, w)));
@@ -2325,7 +2369,9 @@ function renderHome() {
     if (krone) html += crownCard(krone.p, krone.score);   // ohne Punkte steht „Noch keine Punkte“
   }
   if (state.near) html += nearBar();
-  if (rows) html += `<section class="karte" aria-label="Platz 1 je Rubrik">${rows}</section>`;
+  if (aktiveGruppe) html += `<nav class="topnav" aria-label="Zurück"><button type="button" class="back" data-group-back>← ${esc(state.kiez)}</button><span class="topnav-title">${esc(aktiveGruppe.name)}</span></nav>`;
+  if (gruppenAnsicht) html += groupTiles();
+  else if (rows) html += `<section class="karte" aria-label="Platz 1 je Rubrik">${rows}</section>`;
   else if (filtering) html += `<div class="empty"><h3>Dazu gibt es hier noch nichts</h3><p>Versuch es mit anderen Worten oder wähl oben „Überall“.</p></div>`;
   else if (cityEmpty) html += `<div class="empty"><h3>${esc(curCity().name)} ist im Aufbau</h3><p>${state.canEdit ? "Öffne eine Rubrik und trag den ersten Ort ein." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p>${state.canEdit ? `<div class="chips">${Object.values(CATS).map(c => `<a class="chip" href="#${c.id}">${esc(c.name)}</a>`).join("")}</div>` : ""}</div>`;
   else if (state.kiez) html += `<div class="empty"><h3>In ${esc(state.kiez)} gibt es hier noch nichts</h3><p>Wähl oben „Überall“, um alle Orte zu sehen.</p></div>`;
@@ -4490,7 +4536,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.153";
+const APP_VERSION = "1.0.154";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
