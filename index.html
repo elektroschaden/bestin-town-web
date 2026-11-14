@@ -2239,6 +2239,42 @@ function bindUpDuel(root) {
     } catch (e) {}
   }));
 }
+// Ortskarten auf- und zuklappen. Gilt überall, wo placeCard() zeichnet —
+// in der Rubrik genauso wie in der Gruppe auf der Ortsseite.
+// Aktionen in der geöffneten Karte — auch auf der Ortsseite. Der Stift springt
+// in die Rubrik des Ortes und öffnet dort das Formular; damit ist Bearbeiten
+// überall erreichbar, ohne die Rubrikseite doppelt zu bauen.
+function bindCardActions(view) {
+  view.querySelectorAll("[data-visit-open]").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    openVisitSheet(b.dataset.visitOpen);
+  }));
+  view.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => {
+    const pl = state.places.find(x => x.id === b.dataset.edit); if (!pl) return;
+    const catId = pl.category;
+    state.open.delete(pl.id);
+    state.nextForm = { cat: catId, id: pl.id };
+    if (currentCat() === catId) { state.form = state.nextForm; state.nextForm = null; render(); }
+    else location.hash = catId;
+  }));
+  view.querySelectorAll("[data-ask-del]").forEach(b => b.addEventListener("click", () => { state.confirmDelete = b.dataset.askDel; render(); }));
+  view.querySelectorAll("[data-cancel-del]").forEach(b => b.addEventListener("click", () => { state.confirmDelete = null; render(); }));
+  view.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => removePlace(b.dataset.del)));
+}
+function bindPlaceToggles(view) {
+  view.querySelectorAll("[data-toggle]").forEach(h => {
+    const t = () => {
+      const id = h.dataset.toggle;
+      const wasOpen = state.open.has(id);
+      if (wasOpen) state.open.delete(id); else state.open.add(id);
+      if (state.pending && state.pending.placeId === id && !state.open.has(id)) state.pending = null;
+      render();
+      if (!wasOpen) warmShareCard(state.places.find(x => x.id === id));
+    };
+    h.addEventListener("click", e => { if (e.target.closest("a, button")) return; t(); });
+    h.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); t(); } });
+  });
+}
 function bindEo(root) {
   root.querySelectorAll("[data-eo]").forEach(b => b.addEventListener("click", async () => {
     // Der Schlüssel steht am gerenderten Block: in der Rubrik ist das Paar ein
@@ -2599,6 +2635,8 @@ function renderHome() {
     else location.hash = catId;
   });
   view.querySelectorAll("[data-near-r]").forEach(b => b.addEventListener("click", () => { state.nearRadius = Number(b.dataset.nearR); render(); }));
+  bindPlaceToggles(view);
+  bindCardActions(view);
   bindSuggestions(view);
   bindModeration(view);
   bindPaten(view);
@@ -3314,11 +3352,7 @@ function renderCategory(cat) {
     catch (e) { state.note = "Das hat nicht geklappt: " + (e && e.message ? e.message : "unbekannter Fehler"); }
     finally { state.busy = false; render(); }
   }));
-  view.querySelectorAll("[data-toggle]").forEach(h => {
-    const t = () => { const id = h.dataset.toggle; const wasOpen = state.open.has(id); if (wasOpen) state.open.delete(id); else state.open.add(id); if (state.pending && state.pending.placeId === id && !state.open.has(id)) state.pending = null; render(); if (!wasOpen) warmShareCard(state.places.find(x => x.id === id)); };
-    h.addEventListener("click", e => { if (e.target.closest("a, button")) return; t(); });
-    h.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); t(); } });
-  });
+  bindPlaceToggles(view);
   // Pfeile: verschieben nur bei GLEICHER Punktzahl. Sobald die Stimmen
   // unterscheiden, ist ein Eingriff gesperrt — sonst könnte der Pate die
   // Abstimmung überstimmen.
@@ -4641,7 +4675,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.165";
+const APP_VERSION = "1.0.167";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
