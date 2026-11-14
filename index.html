@@ -969,6 +969,19 @@ function knownKieze(city) {
   (state.places || []).forEach(p => { if (cityOf(p) === city && p.kiez) set.add(String(p.kiez).toLowerCase()); });
   return set;
 }
+// Wenn Google keinen Ortsteil liefert (für die Bölschestraße kommt nur „Bezirk
+// Treptow-Köpenick"): den Stadtteil des nächstgelegenen erfassten Ortes nehmen.
+function nearestKiez(lat, lng, city) {
+  if (typeof lat !== "number" || typeof lng !== "number") return "";
+  let best = null;
+  state.places.forEach(p => {
+    if (typeof p.lat !== "number" || !kiezOf(p)) return;
+    if (city && cityOf(p) !== city) return;
+    const d = placeDistance({ lat, lng }, { lat: p.lat, lng: p.lng });
+    if (d != null && d <= 3000 && (!best || d < best.d)) best = { kiez: kiezOf(p), d };
+  });
+  return best ? best.kiez : "";
+}
 function kiezFromComponents(components, city) {
   const cands = [];
   for (const t of ["neighborhood", "sublocality", "sublocality_level_1"]) {
@@ -1006,7 +1019,10 @@ function googleReasonText(place) {
 function applyGoogleExtras(f, place, isNewPlace) {
   let filledExtra = false;
   const kiezEl = f.querySelector("#f-kiez");
-  const kiez = kiezFromComponents(place.addressComponents);
+  let kiez = kiezFromComponents(place.addressComponents);
+  if (!kiez && place.location) {
+    try { kiez = nearestKiez(place.location.lat(), place.location.lng(), state.city); } catch (e) {}
+  }
   if (kiezEl && kiez && kiezEl.value !== kiez) { kiezEl.value = kiez; filledExtra = true; }
   const websiteEl = f.querySelector("#f-website");
   if (websiteEl && place.websiteURI && websiteEl.value !== place.websiteURI) { websiteEl.value = place.websiteURI; filledExtra = true; }
@@ -3737,9 +3753,15 @@ async function searchTextCandidates(query, pos, max) {
   if (!window.google?.maps?.importLibrary) return [];
   const { Place } = await google.maps.importLibrary("places");
   const fields = ["id", "displayName", "formattedAddress", "types", "addressComponents", "websiteURI", "primaryTypeDisplayName", "location"];
-  const req = { textQuery: query, fields, maxResultCount: max || 8 };
-  if (pos) req.locationBias = { center: { lat: pos.lat, lng: pos.lng }, radius: 20000 };
-  const r = await Place.searchByText(req);
+  const base = { textQuery: query, fields, maxResultCount: max || 8 };
+  let r = null;
+  try {
+    r = await Place.searchByText(pos ? Object.assign({}, base, { locationBias: { center: { lat: pos.lat, lng: pos.lng }, radius: 20000 } }) : base);
+  } catch (e) {
+    // Google antwortet gelegentlich mit einem internen Fehler (MapsServerError).
+    // Ein zweiter Versuch ohne Standort-Bias geht fast immer durch.
+    try { r = await Place.searchByText(base); } catch (e2) { r = { places: [] }; }
+  }
   return (r.places || []).map(p => {
     const out = pickFromPlace(p);
     const loc = p.location ? { lat: p.location.lat(), lng: p.location.lng() } : null;
@@ -4392,7 +4414,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.147";
+const APP_VERSION = "1.0.148";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
