@@ -937,10 +937,9 @@ body.boot-reveal .ranking > li { animation: none !important; }
 <script>
 // Kuratierte Rubriken, ausgerichtet auf Reisende.
 const AREAS = [
-  { id: "essen", name: "Essen", cats: [["restaurant","Restaurant"],["eisdiele","Eisdiele"]] },
-  { id: "trinken", name: "Trinken", cats: [["cafe","Café"],["bar","Bar"]] },
-  { id: "ausgehen", name: "Ausgehen", cats: [["club","Club"],["aussicht","Aussicht & Dachterrasse"]] },
-  { id: "kultur", name: "Kultur & Bühne", cats: [["buehne","Bühne & Konzerte"],["museum","Museum & Kino"]] },
+  { id: "essen", name: "Essen & Trinken", cats: [["restaurant","Restaurant"],["cafe","Café"],["bar","Bar"],["eisdiele","Eisdiele"]] },
+  { id: "kultur", name: "Kultur", cats: [["buehne","Bühne & Konzerte"],["museum","Museum & Kino"]] },
+  { id: "ausgehen", name: "Ausgehen", cats: [["aussicht","Aussicht & Dachterrasse"],["club","Club"]] },
   { id: "shopping", name: "Shopping", cats: [["shopping","Shopping"]] },
   { id: "uebernachten", name: "Übernachten", cats: [["hotel","Hotel"]] }
 ];
@@ -955,7 +954,7 @@ const ALIAS = { "fruehstueck-brunch": "cafe", baeckerei: "cafe", kneipe: "bar", 
   "doener-imbiss": "restaurant" };
 const mapCat = c => ALIAS[c] || c;
 // Reihenfolge auf der Startseite: nach Wichtigkeit, immer gleich.
-const HOME_ORDER = ["restaurant", "cafe", "buehne", "museum", "shopping", "aussicht", "bar", "club", "eisdiele", "hotel"];
+const CAT_ORDER = AREAS.flatMap(a => a.cats.map(c => c[0]));
 const CATS = {};
 AREAS.forEach(a => a.cats.forEach(([id, name]) => { CATS[id] = { id, name, area: a }; }));
 const TOTAL = Object.keys(CATS).length;
@@ -2036,15 +2035,18 @@ function eoComparable(a, b) {
   const ga = eoGenre(a), gb = eoGenre(b);
   return !ga || !gb || ga === gb;
 }
-function eoCats(before) { return Object.keys(CATS).filter(id => eoRanked(id, before).length >= 2); }
-// Die Rubrik des Tages: jeden Tag eine andere, der Reihe nach. So fragt die App
-// immer etwas anderes, aber immer Vergleichbares — ein Duell pro Ort und Tag.
-function eoCatToday() {
-  const cats = eoCats(0).slice().sort();
-  if (!cats.length) return null;
-  const d = new Date();
-  const n = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
-  return cats[n % cats.length] || null;
+// Alle Orte einer Gruppe (über ihre Rubriken), gefiltert wie bisher:
+// gleiche Stadt, gleicher Ortsteil, nur Orte vom Tagesbeginn.
+function eoGroupPlaces(groupId, before) {
+  const g = AREAS.find(a => a.id === groupId);
+  return g ? g.cats.flatMap(([id]) => eoRanked(id, before)) : [];
+}
+function eoGroups(before) { return AREAS.filter(a => eoGroupPlaces(a.id, before).length >= 2).map(a => a.id); }
+// Die Gruppe des Tages: jeden Tag eine andere, der Reihe nach. Fünf Themen
+// statt zehn Rubriken — ein Duell pro Ortsteil und Tag.
+function eoGroupToday() {
+  const gs = eoGroups(0);
+  return gs.length ? gs[eoToday() % gs.length] : null;
 }
 function eoKey(a, b) { return [a, b].sort().join("__"); }
 // Ein Paar ist gültig, solange beide Orte existieren und in dieser Stadt liegen.
@@ -2057,28 +2059,34 @@ function eoToday() { const d = new Date(Date.now() - EO_HOUR * 36e5); return Mat
 // Nur Orte, die zu Beginn dieses Tages schon da waren, zählen: neu eingetragene Orte ändern das heutige Paar nicht.
 function eoDayStart() { const d = new Date(Date.now() - EO_HOUR * 36e5); return new Date(d.getFullYear(), d.getMonth(), d.getDate(), EO_HOUR).getTime(); }
 function eoHash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-function eoPair(onlyCat) {
-  // Das Paar wird einmal je Stadt, Rubrik und Tag festgehalten. Sonst kann es
+function eoInGroup(p, groupId) {
+  const g = AREAS.find(a => a.id === groupId);
+  return !!g && g.cats.some(([id]) => id === p.category);
+}
+function eoPair(onlyGroup) {
+  // Das Paar wird einmal je Stadt, Gruppe und Tag festgehalten. Sonst kann es
   // mitten am Tag wechseln, wenn ein Ort dazukommt, gelöscht wird oder die
   // Reihenfolge durch Stimmen wandert.
-  const cacheKey = "eo.pair." + state.city + (state.kiez ? "." + state.kiez : "") + (onlyCat ? "." + onlyCat : "") + "." + eoToday();
+  const cacheKey = "eo.pair." + state.city + (state.kiez ? "." + state.kiez : "") + (onlyGroup ? ".g" + onlyGroup : "") + "." + eoToday();
   try {
     const c = JSON.parse(localStorage.getItem(cacheKey) || "null");
-    if (eoValid(c) && (!onlyCat || c.cat === onlyCat)) {
-      const fa = state.places.find(p => p.id === c.a), fb = state.places.find(p => p.id === c.b);
-      if (fa && fb) return { key: eoKey(c.a, c.b), cat: c.cat, a: fa, b: fb };
+    const fa = c ? state.places.find(p => p.id === c.a) : null, fb = c ? state.places.find(p => p.id === c.b) : null;
+    if (eoValid(c) && fa && fb && (!onlyGroup || (eoInGroup(fa, onlyGroup) && eoInGroup(fb, onlyGroup)))) {
+      return { key: eoKey(c.a, c.b), cat: fa.category, group: onlyGroup, a: fa, b: fb };
     }
   } catch (e) {}
   // Gibt es mit den Orten vom Tagesbeginn noch kein Paar (neue Stadt, erste Orte), zählen alle Orte.
-  let t0 = eoDayStart(), cats = onlyCat ? (eoRanked(onlyCat, t0).length >= 2 ? [onlyCat] : []) : eoCats(t0);
-  if (!cats.length) { t0 = 0; cats = onlyCat ? (eoRanked(onlyCat, 0).length >= 2 ? [onlyCat] : []) : eoCats(0); }
-  if (!cats.length) return null;
+  let t0 = eoDayStart(), groups = onlyGroup ? (eoGroupPlaces(onlyGroup, t0).length >= 2 ? [onlyGroup] : []) : eoGroups(t0);
+  if (!groups.length) { t0 = 0; groups = onlyGroup ? (eoGroupPlaces(onlyGroup, 0).length >= 2 ? [onlyGroup] : []) : eoGroups(0); }
+  if (!groups.length) return null;
+  // Innerhalb einer Gruppe tritt jeder Ort gegen jeden an — Restaurant gegen Café
+  // eingeschlossen. Was nicht zusammenpasst (Oper gegen Jazz), hält eoComparable auf.
   const all = [];
-  cats.forEach(cat => {
-    const list = eoRanked(cat, t0), byId = new Map(list.map(p => [p.id, p]));
+  groups.forEach(gid => {
+    const list = eoGroupPlaces(gid, t0), byId = new Map(list.map(p => [p.id, p]));
     const L = list.map(p => p.id).sort();
     for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
-      if (eoComparable(byId.get(L[i]), byId.get(L[j]))) all.push({ cat, a: L[i], b: L[j] });
+      if (eoComparable(byId.get(L[i]), byId.get(L[j]))) all.push({ gid, a: L[i], b: L[j] });
     }
   });
   if (!all.length) return null;
@@ -2086,8 +2094,10 @@ function eoPair(onlyCat) {
   const day = eoToday(), c = all[day % all.length];
   const flip = eoHash(state.city + day) % 2 === 1;
   const byId = id => state.places.find(p => p.id === id);
-  const pair = { key: eoKey(c.a, c.b), cat: c.cat, a: byId(flip ? c.b : c.a), b: byId(flip ? c.a : c.b) };
-  try { localStorage.setItem(cacheKey, JSON.stringify({ a: pair.a.id, b: pair.b.id, cat: c.cat })); } catch (e) {}
+  const pa = byId(flip ? c.b : c.a), pb = byId(flip ? c.a : c.b);
+  // Das Symbol auf der Karte ist das der linken Rubrik.
+  const pair = { key: eoKey(c.a, c.b), cat: pa.category, group: c.gid, a: pa, b: pb };
+  try { localStorage.setItem(cacheKey, JSON.stringify({ a: pa.id, b: pb.id, cat: pair.cat })); } catch (e) {}
   return pair;
 }
 function eoMine(key) { const d = state.duelVotes.find(x => x.id === state.uid); return d && d.picks ? d.picks[key] || "" : ""; }
@@ -2294,7 +2304,7 @@ function renderHome() {
   const f = parseQuery(state.query), tagSel = f.tags || [];
   const filtering = !!(f.cats.size || tagSel.length || f.words.length);
   let rows = "";
-  HOME_ORDER.forEach(id => {
+  CAT_ORDER.forEach(id => {
     if (!CATS[id] || (f.cats.size && !f.cats.has(id))) return;
     let list = ranked(placesOf(id).map(p => ({ p, ...stat(p) })));
     if (state.near) list = list.filter(x => { const d = nearDist(x.p); return d != null && d <= state.nearRadius; });
@@ -2307,7 +2317,7 @@ function renderHome() {
   // Bei aktiver Suche nur die Treffer: kein Spiel, kein Pate, keine Vorschläge.
   // Drei Ebenen, drei Aufgaben: Stadt = Krone, Ort = Tagesfrage.
   // Stadtweit nie ein Duell — auch nicht bei Gleichstand an der Spitze.
-  let html = filtering ? "" : (state.kiez ? eoBlock(eoCatToday()) : "");
+  let html = filtering ? "" : (state.kiez ? eoBlock(eoGroupToday()) : "");
   if (!filtering && !state.kiez) {
     // Darunter, stadtweit: die Krone. In meiner Nähe ist ein eigener Ort —
     // dort zaehlt der beste Ort im Umkreis, nicht die vorher gewaehlte Stadt.
@@ -3010,7 +3020,7 @@ function renderCategory(cat) {
   const heroEnter = !!state.heroEnter; state.heroEnter = false;
   let html = `
     <nav class="topnav" aria-label="Navigation"><a class="back" href="#start">← Alle Rubriken</a><span class="topnav-title">${esc(cat.name)}</span></nav>
-    ${cityView || cat.id !== eoCatToday() ? "" : eoBlock(cat.id)}
+    ${cityView || cat.area.id !== eoGroupToday() ? "" : eoBlock(eoGroupToday())}
     ${nearBar()}
     ${state.canEdit ? `<div class="order-bar">
       <span class="order-label">Reihenfolge</span>
@@ -3022,11 +3032,8 @@ function renderCategory(cat) {
     </div>`;
 
   if (!all.length && !allCommunity.length) {
-    const filled = Object.values(CATS).filter(c => c.id !== cat.id && placesOf(c.id).length);
     html += `<div class="empty">
       <h3>Noch kein Ort in dieser Rubrik${state.kiez ? " in " + esc(state.kiez) : ""}</h3>
-      <p>${state.canEdit ? "Trag den ersten Ort ein, mit kurzem Hinweis, woher die Angabe stammt." : state.kiez ? "Wähl oben „Überall“ oder schau dir diese Rubriken an:" : "Schau dir inzwischen diese Rubriken an:"}</p>
-      <div class="chips">${filled.slice(0, 12).map(c => `<a class="chip" href="#${c.id}">${esc(c.name)}</a>`).join("")}</div>
     </div>`;
   } else if (cityView) {
     // Gesamtstadt: kein Duell, keine gemischte Rangliste. Oben der Ort mit den
@@ -4483,7 +4490,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.151";
+const APP_VERSION = "1.0.153";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
