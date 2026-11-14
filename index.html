@@ -619,6 +619,15 @@ body.has-homebar { padding-bottom: 110px; }
   display: block;
   background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 16px; box-shadow: var(--shadow);
 }
+/* Flache Liste: die Zeilen trennt eine Haarlinie, keine Kartenflächen.
+   Nur Platz 1 bleibt eine Karte — das Schmuckstück der Liste. */
+.place:not(.is-first) {
+  background: none; border: 0; border-radius: 0; box-shadow: none;
+  border-bottom: 1px solid var(--line); padding: 14px 2px 15px;
+}
+.ranking > .place:not(.is-first):last-child { border-bottom: 0; }
+.place:not(.is-first) .votes-pill { background: none; padding: 0; color: var(--muted); }
+.place:not(.is-first) .card-actions { border-top-color: var(--line); }
 /* Platz 1 ist die kleine grüne Siegerkarte — in jeder Rubrik-Liste, ob stadtweit
    oder im Ort. Goldene 1, weiße Schrift, sonst dieselbe Bauform wie die Nachbarn. */
 .place.is-first {
@@ -4568,7 +4577,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.157";
+const APP_VERSION = "1.0.158";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
