@@ -281,6 +281,27 @@ body.has-homebar { padding-bottom: 110px; }
 .scard { margin: 18px 0 6px; background: var(--paper); border: 1px solid var(--deep); padding: 6px; }
 .scard-in { border: 1px solid var(--deep); padding: 22px 16px 18px; display: grid; gap: 12px; justify-items: center; text-align: center; }
 .scard .ok { margin: 0 0 8px; text-align: center; }
+/* Geöffnet ist hier ein Formular zu Gast: dann fällt der zweite Rahmen weg,
+   damit das Formular die volle Breite bekommt — und alles mehr Luft. */
+.scard.is-open { padding: 0; border-color: var(--line); }
+.scard.is-open .scard-in { border: 0; padding: 0; display: block; text-align: left; justify-items: stretch; }
+.scard.is-open #suggestForm { text-align: left; }
+.scard.is-open #suggestForm .field > label { text-align: left; display: block; }
+.scard.is-open #suggestForm .form-actions { display: grid; grid-template-columns: 1fr; }
+.scard.is-open #suggestForm .form-actions .btn { width: 100%; justify-content: center; }
+.scard.is-open #suggestForm .field input::placeholder { font-size: 15px; }
+.scard.is-open #suggestForm { padding: 20px 18px 20px; gap: 22px; width: 100%; }
+.scard.is-open #suggestForm h2 { margin-bottom: 2px; }
+.scard.is-open .field > span { margin-bottom: 2px; }
+.scard.is-open .field input,
+.scard.is-open .field textarea { padding: 13px 14px; font-size: 16px; }
+.scard.is-open .field { gap: 6px; }
+.scard.is-open #s-near,
+.scard.is-open .form-actions .btn { min-height: 46px; font-size: 15px; }
+.scard.is-open .form-actions { gap: 10px; margin-top: 4px; }
+.scard.is-open .s-manual { margin-top: 18px; padding-top: 6px; }
+.scard.is-open .near-list { margin-top: 4px; }
+.scard.is-open .picked { margin-top: 4px; }
 .sc-pin { width: 60px; height: 60px; color: var(--deep); }
 .sc-q { font-family: var(--font-display); font-size: 30px; line-height: 1.05; }
 .sc-q span { color: #B8892B; }
@@ -2249,7 +2270,7 @@ function karteRow(id, x, rank) {
 const PIN = `<svg class="sc-pin" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="3"/><path d="M32 14 c-8 0 -13 6 -13 12 c0 9 13 23 13 23 s13 -14 13 -23 c0 -6 -5 -12 -13 -12z" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="32" cy="26" r="4.5" fill="currentColor"/></svg>`;
 function suggestCard() {
   if (state.canEdit || !state.db || !state.canVote) return "";
-  return `<section class="scard" aria-label="Ort vorschlagen">
+  return `<section class="scard${state.suggest ? " is-open" : ""}" aria-label="Ort vorschlagen">
     ${state.thanks ? `<p class="ok">Danke! Dein Vorschlag ist eingegangen und wird geprüft.</p>` : ""}
     <div class="scard-in">${state.suggest ? `<div id="suggestSlot" style="width:100%"></div>`
       : `${PIN}<div class="sc-q">Dein Lieblingsort fehlt<span>?</span></div><button class="btn primary sc-btn" id="openSuggest">Ort vorschlagen</button>`}</div>
@@ -2322,7 +2343,7 @@ function renderHome() {
     } else if (state.pendingGoogle) {
       html += `<div class="field" style="width:100%"><label for="homeAddCat">Rubrik${state.pendingGoogle.name ? ` für „${esc(state.pendingGoogle.name)}“` : ""}</label><select id="homeAddCat" autofocus><option value="">Rubrik wählen …</option>${catOptions(null)}</select></div>`;
     } else {
-      html += `<div class="field full field-autocomplete" style="width:100%"><label for="homeAddAddress">Ort suchen (Google)</label><gmp-place-autocomplete id="homeAddAddress" placeholder="Name oder Adresse eingeben …"></gmp-place-autocomplete>${nearBtnHtml("home-near")}</div>
+      html += `<div class="field full field-autocomplete" style="width:100%"><label for="homeAddAddress">Ort suchen (Google)</label><gmp-place-autocomplete id="homeAddAddress" placeholder="Name oder Adresse …"></gmp-place-autocomplete>${nearBtnHtml("home-near")}</div>
       <p class="toggle-row" style="width:100%"><button type="button" class="btn link" id="homeAddManual">Manuell anlegen</button></p>`;
     }
   }
@@ -3226,7 +3247,7 @@ function buildForm(cat) {
     ${sug ? `<p class="note">Aus einem Vorschlag. Prüf die Angaben, dann speichern.</p>` : ""}
     ${showGate ? `
     <div class="fields" id="f-step1">
-      <div class="field full field-autocomplete"><label for="f-address-gate">Ort suchen (Google)</label><gmp-place-autocomplete id="f-address-gate" placeholder="Name oder Adresse eingeben …"></gmp-place-autocomplete>${nearBtnHtml("f-near-gate")}</div>
+      <div class="field full field-autocomplete"><label for="f-address-gate">Ort suchen (Google)</label><gmp-place-autocomplete id="f-address-gate" placeholder="Name oder Adresse …"></gmp-place-autocomplete>${nearBtnHtml("f-near-gate")}</div>
       <p class="toggle-row"><button type="button" class="btn link" id="f-manual">Manuell anlegen</button></p>
     </div>` : ""}
     <div class="fields" id="f-step2" ${showGate ? "hidden" : ""}>
@@ -3870,7 +3891,7 @@ function buildSuggest(catId) {
   f.innerHTML = `
     <h2>Ort vorschlagen</h2>
     <div class="field full field-autocomplete"><label for="s-address">Ort suchen (Google)</label>
-      <gmp-place-autocomplete id="s-address" placeholder="Name oder Adresse eingeben …"></gmp-place-autocomplete></div>
+      <gmp-place-autocomplete id="s-address" placeholder="Name oder Adresse …"></gmp-place-autocomplete></div>
     <button type="button" class="btn wide-btn" id="s-near">In meiner Nähe suchen</button>
     <div id="s-near-list" class="near-list" hidden></div>
     <div id="s-picked" class="picked" hidden></div>
@@ -4462,7 +4483,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.150";
+const APP_VERSION = "1.0.151";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
