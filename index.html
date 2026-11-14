@@ -176,9 +176,8 @@ h1, h2, h3 { font-weight: 400; }
 .gtiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gtile { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
   align-items: flex-start; gap: 2px; min-height: 96px;
-  background: linear-gradient(180deg, #FFFDF8, #FBF6EA); border: 1px solid var(--line);
+  background: #F5EFE2; border: 1px solid var(--line);
   border-radius: 16px; padding: 13px 12px;
-  box-shadow: 0 1px 2px rgba(21, 38, 31, .06), 0 12px 28px -18px rgba(21, 38, 31, .45);
   font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .gtile b { position: relative; font-family: var(--font-display); font-weight: 400; font-size: 16px; line-height: 1.15; }
 .gtile small { position: relative; font-size: 11px; color: var(--muted); }
@@ -4586,7 +4585,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.160";
+const APP_VERSION = "1.0.161";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
