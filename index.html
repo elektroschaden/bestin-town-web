@@ -176,7 +176,7 @@ h1, h2, h3 { font-weight: 400; }
 .gtiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gtile { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
   align-items: flex-start; gap: 2px; min-height: 96px;
-  background: #F5EFE2; border: 1px solid var(--line);
+  background: var(--paper); border: 1px solid #CFC4AC;
   border-radius: 16px; padding: 13px 12px;
   font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .gtile b { position: relative; font-family: var(--font-display); font-weight: 400; font-size: 16px; line-height: 1.15; }
@@ -447,7 +447,17 @@ body.has-homebar { padding-bottom: 110px; }
 .invite-cta { border: 0; background: none; padding: 4px 0 4px 4px; cursor: pointer; font: inherit;
   font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
 .invite-cta:hover { color: var(--deep); }
-.invite-body { margin-top: 12px; }
+.invite-body { margin-top: 26px; }
+/* Geöffnet bekommt die Karte Luft: alles untereinander, große Tippflächen. */
+.community-invite { padding: 28px 24px 26px; }
+#joinCommunity { display: grid; gap: 26px; }
+#joinCommunity .tools { display: grid; gap: 10px; margin: 0; }
+#joinCommunity label { display: grid; gap: 9px; font-size: 12.5px; }
+#joinCommunity input { height: 54px; padding: 0 15px; font-size: 15.5px; box-sizing: border-box; width: 100%; }
+#joinCommunity .btn { height: 54px; font-size: 15.5px; width: 100%; justify-self: stretch; }
+#joinCommunity #joinStatus { margin: 0; min-height: 18px; }
+#joinCommunity > p.tools:last-child { margin: 0; padding-top: 20px; border-top: 1px solid var(--line); }
+#joinCommunity > p.tools:last-child .btn { height: 44px; font-size: 14px; }
 /* Anmelden (bestehendes Konto): eigene Karte statt Textkasten */
 .signin-panel { margin: 14px 0 22px; padding: 18px 16px 14px; }
 .signin-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
@@ -792,7 +802,8 @@ gmp-place-autocomplete { display: block; width: 100%; max-width: 100%; min-width
 .near-item:active { background: var(--sign-soft); }
 .ni-name { font-weight: 600; }
 .ni-meta { font-size: 12px; color: var(--muted); }
-.near-btn { justify-self: start; margin-top: 8px; }
+.near-btn { justify-self: start; margin-top: 8px; display: inline-flex; align-items: center; gap: 7px; }
+.near-btn .s-ico { width: 16px; height: 16px; flex: none; }
 .field .near-list { margin-top: 10px; }
 .s-manual { margin-top: 12px; }
 .s-manual summary { font-size: 13px; color: var(--muted); cursor: pointer; }
@@ -2371,11 +2382,12 @@ function groupSections(areaId) {
 }
 function groupTiles() {
   const heute = eoGroupToday();
-  return `<section class="gtiles" aria-label="Gruppen">${AREAS.map(a => {
+  // Leere Gruppen gibt es nicht: keine blasse Kachel, kein „noch leer".
+  const voll = AREAS.filter(a => a.cats.some(([id]) => placesOf(id).length));
+  return `<section class="gtiles" aria-label="Gruppen">${voll.map(a => {
     const n = a.cats.filter(([id]) => placesOf(id).length).length;
-    const off = n === 0;
-    const zusatz = off ? "noch leer" : `${n} ${n === 1 ? "Rubrik" : "Rubriken"}${a.id === heute ? " · heute im Duell" : ""}`;
-    return `<button type="button" class="gtile${off ? " off" : ""}" data-group="${a.id}"${off ? " disabled" : ""}>
+    const zusatz = `${n} ${n === 1 ? "Rubrik" : "Rubriken"}${a.id === heute ? " · heute im Duell" : ""}`;
+    return `<button type="button" class="gtile" data-group="${a.id}">
       <span class="gwm" aria-hidden="true">${GROUP_ICON[a.id] || ""}</span>
       <b>${esc(a.name)}</b>
       <small>${zusatz}</small>
@@ -3909,8 +3921,18 @@ function fmtDistance(m) {
 // Einheitlicher „In meiner Nähe“-Knopf samt Liste — für JEDES Google-Suchfeld
 // (Vorschlag, Ort eintragen, Ort bearbeiten, Startseite). catId steuert den
 // Typfilter; ohne catId wird nicht gefiltert.
+const SEARCH_ICON = `<svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>`;
+// Enter im Suchfeld löst dieselbe Suche aus wie der Knopf — ein Weg, zwei Griffe.
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const t = e.target;
+  const feld = t && t.closest ? t.closest(".field-autocomplete") : null;
+  if (!feld) return;
+  const knopf = feld.querySelector(".near-btn");
+  if (knopf) { e.preventDefault(); knopf.click(); }
+});
 function nearBtnHtml(id) {
-  return `<button type="button" class="btn wide-btn near-btn" id="${id}">Suchen</button><div class="near-list" id="${id}-list" hidden></div>`;
+  return `<button type="button" class="btn wide-btn near-btn" id="${id}">${SEARCH_ICON}Suchen</button><div class="near-list" id="${id}-list" hidden></div>`;
 }
 function nearListHtml(list, title) {
   return `<p class="near-title">${esc(title || "In deiner Nähe")}</p>` + (list.length
@@ -3994,7 +4016,7 @@ function buildSuggest(catId) {
     <h2>Ort vorschlagen</h2>
     <div class="field full field-autocomplete"><label for="s-address">Ort suchen (Google)</label>
       <gmp-place-autocomplete id="s-address" placeholder="Name oder Adresse …"></gmp-place-autocomplete></div>
-    <button type="button" class="btn wide-btn" id="s-near">In meiner Nähe suchen</button>
+    <button type="button" class="btn wide-btn near-btn" id="s-near">${SEARCH_ICON}Suchen</button>
     <div id="s-near-list" class="near-list" hidden></div>
     <div id="s-picked" class="picked" hidden></div>
     <div class="field full"><label for="s-note">Warum dieser Ort?</label>
@@ -4585,7 +4607,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.161";
+const APP_VERSION = "1.0.163";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
