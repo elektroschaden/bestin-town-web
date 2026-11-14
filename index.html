@@ -173,6 +173,17 @@ h1, h2, h3 { font-weight: 400; }
 .rhead em { font-style: normal; font-weight: 600; letter-spacing: .04em; color: #9A9689; }
 .rhead:after { content: ""; flex: 1; height: 1px; background: var(--line); align-self: center; }
 .rmore { display: inline-block; margin: -2px 0 4px 2px; font-size: 12px; font-weight: 600; color: var(--deep); text-decoration: none; }
+/* Gruppen als Zeilen — dieselbe Sprache wie die Listen. */
+.grows { display: grid; }
+.grow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 14px 2px; background: none; border: 0; border-bottom: 1px solid var(--line);
+  font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.grow:last-child { border-bottom: 0; }
+.gico { width: 22px; height: 22px; color: var(--deep); display: grid; place-items: center; }
+.gico svg { width: 20px; height: 20px; }
+.gname { font-family: var(--font-display); font-size: 18px; line-height: 1.15; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.gduel { font-family: var(--font-body); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
+.gcount { font-size: 13px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 .gtiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gtile { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
   align-items: flex-start; gap: 2px; min-height: 96px;
@@ -795,10 +806,17 @@ gmp-place-autocomplete { display: block; width: 100%; max-width: 100%; min-width
 .picked-name { margin: 0; font-family: var(--font-display); font-size: 20px; line-height: 1.15; }
 .picked-addr { margin: 0; font-size: 13px; color: var(--muted); }
 .picked .note { margin: 0; font-size: 13px; }
-.near-title { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.near-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 0 0 2px;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.near-title em { font-style: normal; font-weight: 600; letter-spacing: .04em; color: #9A9689; text-transform: none; }
 .near-list { justify-items: stretch; }
-.near-item { display: grid; gap: 2px; width: 100%; text-align: left; padding: 10px 12px; font: inherit; color: inherit;
-  border: 1px solid var(--line); border-radius: 10px; background: #FFFDF8; cursor: pointer; }
+.near-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center;
+  width: 100%; text-align: left; padding: 12px 4px; font: inherit; color: inherit;
+  border: 0; border-bottom: 1px solid var(--line); background: none; cursor: pointer; }
+.near-item:last-child { border-bottom: 0; }
+.ni-main { display: grid; gap: 2px; min-width: 0; }
+.ni-dist { font-size: 12px; font-weight: 700; color: var(--deep); white-space: nowrap; }
+.picked-lbl { font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--deep); }
 .near-item:active { background: var(--sign-soft); }
 .ni-name { font-weight: 600; }
 .ni-meta { font-size: 12px; color: var(--muted); }
@@ -2384,13 +2402,13 @@ function groupTiles() {
   const heute = eoGroupToday();
   // Leere Gruppen gibt es nicht: keine blasse Kachel, kein „noch leer".
   const voll = AREAS.filter(a => a.cats.some(([id]) => placesOf(id).length));
-  return `<section class="gtiles" aria-label="Gruppen">${voll.map(a => {
+  return `<section class="grows" aria-label="Gruppen">${voll.map(a => {
     const n = a.cats.filter(([id]) => placesOf(id).length).length;
-    const zusatz = `${n} ${n === 1 ? "Rubrik" : "Rubriken"}${a.id === heute ? " · heute im Duell" : ""}`;
-    return `<button type="button" class="gtile" data-group="${a.id}">
-      <span class="gwm" aria-hidden="true">${GROUP_ICON[a.id] || ""}</span>
-      <b>${esc(a.name)}</b>
-      <small>${zusatz}</small>
+    const heute_ = a.id === heute;
+    return `<button type="button" class="grow" data-group="${a.id}" aria-label="${esc(a.name)}, ${n} ${n === 1 ? "Rubrik" : "Rubriken"}${heute_ ? ", heute im Duell" : ""}">
+      <span class="gico" aria-hidden="true">${GROUP_ICON[a.id] || ""}</span>
+      <span class="gname">${esc(a.name)}${heute_ ? `<span class="gduel">heute im Duell</span>` : ""}</span>
+      <span class="gcount">${n}</span>
     </button>`;
   }).join("")}</section>`;
 }
@@ -3921,22 +3939,24 @@ function fmtDistance(m) {
 // Einheitlicher „In meiner Nähe“-Knopf samt Liste — für JEDES Google-Suchfeld
 // (Vorschlag, Ort eintragen, Ort bearbeiten, Startseite). catId steuert den
 // Typfilter; ohne catId wird nicht gefiltert.
-const SEARCH_ICON = `<svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>`;
-// Enter im Suchfeld löst dieselbe Suche aus wie der Knopf — ein Weg, zwei Griffe.
-document.addEventListener("keydown", e => {
-  if (e.key !== "Enter") return;
-  const t = e.target;
-  const feld = t && t.closest ? t.closest(".field-autocomplete") : null;
-  if (!feld) return;
-  const knopf = feld.querySelector(".near-btn");
-  if (knopf) { e.preventDefault(); knopf.click(); }
-});
+// Ein Weg, ein Knopf: „Suche starten". Kein Enter, kein zweites Symbol.
 function nearBtnHtml(id) {
-  return `<button type="button" class="btn wide-btn near-btn" id="${id}">${SEARCH_ICON}Suchen</button><div class="near-list" id="${id}-list" hidden></div>`;
+  return `<button type="button" class="btn primary wide-btn near-btn" id="${id}">Suche starten</button><div class="near-list" id="${id}-list" hidden></div>`;
 }
 function nearListHtml(list, title) {
-  return `<p class="near-title">${esc(title || "In deiner Nähe")}</p>` + (list.length
-    ? list.map((c, i) => `<button type="button" class="near-item" data-npick="${i}"><span class="ni-name">${esc(c.name)}</span><span class="ni-meta">${esc(c.type || "")}${c.dist != null ? (c.type ? " · " : "") + fmtDistance(c.dist) : ""}</span></button>`).join("")
+  // Geordnet: erst was eine Entfernung hat (aufsteigend), danach der Rest.
+  // Die Nummer am Knopf bleibt der Platz in der gelieferten Liste — sonst
+  // greift der Klick auf den falschen Treffer.
+  const geordnet = list.map((c, i) => ({ c, i }))
+    .sort((a, b) => {
+      const da = a.c.dist == null ? Infinity : a.c.dist;
+      const db = b.c.dist == null ? Infinity : b.c.dist;
+      return (da - db) || String(a.c.name).localeCompare(String(b.c.name), "de");
+    });
+  const mitDist = list.some(c => c.dist != null);
+  const kopf = `<p class="near-title"><span>${esc(title || "Treffer")}</span><em>${list.length}${mitDist ? " · nach Entfernung" : ""}</em></p>`;
+  return kopf + (list.length
+    ? geordnet.map(({ c, i }) => `<button type="button" class="near-item" data-npick="${i}"><span class="ni-main"><span class="ni-name">${esc(c.name)}</span><span class="ni-meta">${esc(c.type || "")}</span></span><span class="ni-dist">${c.dist != null ? fmtDistance(c.dist) : ""}</span></button>`).join("")
     : `<p class="note">Hier ist gerade nichts in der Nähe erfasst. Such den Ort oben mit Google.</p>`);
 }
 // Freitext-Suche: „vietnamesisch Friedrichshagen", „köpenick", „bölschestr.".
@@ -4016,7 +4036,7 @@ function buildSuggest(catId) {
     <h2>Ort vorschlagen</h2>
     <div class="field full field-autocomplete"><label for="s-address">Ort suchen (Google)</label>
       <gmp-place-autocomplete id="s-address" placeholder="Name oder Adresse …"></gmp-place-autocomplete></div>
-    <button type="button" class="btn wide-btn near-btn" id="s-near">${SEARCH_ICON}Suchen</button>
+    <button type="button" class="btn primary wide-btn near-btn" id="s-near">Suche starten</button>
     <div id="s-near-list" class="near-list" hidden></div>
     <div id="s-picked" class="picked" hidden></div>
     <div class="field full"><label for="s-note">Warum dieser Ort?</label>
@@ -4037,7 +4057,7 @@ function buildSuggest(catId) {
     if (!p) { box.hidden = true; box.innerHTML = ""; save.disabled = !f.querySelector("#s-link").value.trim(); return; }
     const dup = findExistingPlace(p);
     box.hidden = false;
-    box.innerHTML = `<p class="picked-name">${esc(p.name)}</p>
+    box.innerHTML = `<span class="picked-lbl">Gewählt</span><p class="picked-name">${esc(p.name)}</p>
       ${p.address ? `<p class="picked-addr">${esc(p.address)}</p>` : ""}
       ${dup ? `<p class="note">Steht schon drin: <a href="#${esc(dup.category)}">${esc(dup.name)}</a></p>` : ""}
       <button type="button" class="btn" data-unpick>Anderer Ort</button>`;
@@ -4607,7 +4627,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.163";
+const APP_VERSION = "1.0.164";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
