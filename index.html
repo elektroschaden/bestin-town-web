@@ -2222,6 +2222,7 @@ document.addEventListener("click", e => {
     return;
   }
   if (e.target.closest && e.target.closest("[data-sv-share]")) { shareSaved(); return; }
+  if (e.target.closest && e.target.closest("[data-sv-collage]")) { shareCollage(); return; }
 });
 async function shareSaved() {
   const list = savedPlaces();
@@ -2712,7 +2713,7 @@ function discoverAreas() {
   const areas = [...map.entries()].filter(([, list]) => list.length).map(([k, list]) => ({
     kiez: k,
     n: list.length,
-    thumbs: list.filter(p => p.photo).slice(0, 3),
+    thumbs: list.slice(0, 3),
   }));
   areas.sort((a, b) => a.kiez.localeCompare(b.kiez, "de"));
   return { areas };
@@ -2741,8 +2742,8 @@ function areaBodyHtml(kiez) {
     .filter(g => g.list.length);
   const item = p => {
     const line = cleanText(p.reason || "");
-    return `<button type="button" class="area-item${p.photo ? "" : " ohne-foto"}" data-open-place="${esc(p.id)}">
-      ${p.photo ? `<span class="ai-photo"><img src="${photoURL(p.photo)}" alt="" loading="lazy" draggable="false"></span>` : ""}
+    return `<button type="button" class="area-item${photoSrcOf(p) ? "" : " ohne-foto"}" data-open-place="${esc(p.id)}">
+      ${photoSrcOf(p) ? `<span class="ai-photo"><img src="${photoSrcOf(p)}" alt="" loading="lazy" draggable="false"></span>` : ""}
       <span class="ai-name">${esc(p.name)}</span>
       ${line ? `<span class="ai-line">${esc(line)}</span>` : ""}
     </button>`;
@@ -2794,7 +2795,7 @@ function renderDiscover() {
   }
   const rows = areas.map(a => {
     const thumbs = a.thumbs.length
-      ? a.thumbs.map(x => `<i><img src="${photoURL(x.photo)}" alt="" loading="lazy" draggable="false"></i>`).join("")
+      ? a.thumbs.map(x => `<i><img src="${photoSrcOf(x)}" alt="" loading="lazy" draggable="false"></i>`).join("")
       : `<i>${esc(a.kiez.charAt(0).toUpperCase())}</i>`;
     return `<button type="button" class="disc-row" data-area="${esc(a.kiez)}">
       <span class="disc-thumbs" aria-hidden="true">${thumbs}</span>
@@ -2821,7 +2822,7 @@ function renderPlaceView(id) {
   const saved = (state.saved || []).includes(p.id);
   // Ohne Foto keine leere Bildfläche: Der Name steht dann sofort oben. Ein
   // Platzhalter in Fotogröße würde den Ort verstecken, den man sehen will.
-  const foto = p.photo ? `<span class="pv-photo"><img src="${photoURL(p.photo)}" alt="" draggable="false"></span>` : "";
+  const foto = photoSrcOf(p) ? `<span class="pv-photo"><img src="${photoSrcOf(p)}" alt="" draggable="false"></span>` : "";
   return `<button type="button" class="back-btn" data-pv-back aria-label="Zurück zu ${esc(kiez)}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4.6"/><path d="M11 5.6L4.6 12 11 18.4"/></svg>
       <span>${esc(kiez)}</span></button>
@@ -2852,13 +2853,155 @@ function renderSaved() {
   }
   const gebiete = [...new Set(list.map(areaNameOf))];
   const tiles = list.map(p => `<button type="button" class="sv-tile" data-open-place="${esc(p.id)}">
-      <i>${p.photo ? `<img src="${photoURL(p.photo)}" alt="" loading="lazy" draggable="false">` : (CAT_ICON[mapCat(p.category)] || "")}</i>
+      <i>${photoSrcOf(p) ? `<img src="${photoSrcOf(p)}" alt="" loading="lazy" draggable="false">` : (CAT_ICON[mapCat(p.category)] || "")}</i>
       <span class="nm">${esc(p.name)}</span>
     </button>`).join("");
   return `<h1 class="sv-h">Meine Orte</h1>
     <p class="sv-sub">${list.length} ${list.length === 1 ? "Ort" : "Orte"} · ${esc(gebiete.join(" · "))}</p>
     <div class="sv-grid">${tiles}</div>
-    <div class="sv-actions"><button type="button" class="sv-share" data-sv-share>Link teilen</button></div>`;
+    <div class="sv-actions">
+      <button type="button" class="sv-share" data-sv-collage>Collage teilen</button>
+      <button type="button" class="sv-share" data-sv-share>Namen teilen</button>
+    </div>`;
+}
+
+// ---------- Collage ----------
+// Ein Bild aus den gemerkten Orten: 1080 × 1350 (4:5), Fotos in festem Raster,
+// darunter die Namen. Ohne Foto trägt die Kachel den Namen — es gibt keinen
+// leeren Platz. Geteilt wird die Datei über das native Teilen-Menü.
+const COLLAGE_W = 1080, COLLAGE_H = 1350;
+function loadImage(src) {
+  return new Promise(res => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => res(img);
+    img.onerror = () => res(null);
+    img.src = src;
+    setTimeout(() => res(null), 6000);
+  });
+}
+function coverDraw(g, img, x, y, w, h, fx = 50, fy = 40) {
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  if (!iw || !ih) return;
+  const s = Math.max(w / iw, h / ih);
+  const dw = iw * s, dh = ih * s;
+  const dx = x - (dw - w) * (fx / 100);
+  const dy = y - (dh - h) * (fy / 100);
+  g.drawImage(img, dx, dy, dw, dh);
+}
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+async function buildCollage(withPhotos) {
+  resetPhotoUse();
+  const list = savedPlaces();
+  const c = document.createElement("canvas");
+  c.width = COLLAGE_W; c.height = COLLAGE_H;
+  const g = c.getContext("2d");
+  g.fillStyle = "#F6F1E7"; g.fillRect(0, 0, COLLAGE_W, COLLAGE_H);
+  try {
+    await document.fonts.load('400 64px "Instrument Serif"');
+    await document.fonts.load('500 24px Inter');
+  } catch (e) { /* Systemschrift ist der Rückfall */ }
+
+  g.fillStyle = "#15261F";
+  g.font = '400 64px "Instrument Serif", Georgia, serif';
+  g.fillText("Meine Orte", 72, 128);
+  g.fillStyle = "#6A675C";
+  g.font = '500 24px Inter, system-ui, sans-serif';
+  const gebiete = [...new Set(list.map(areaNameOf))];
+  g.fillText(`${list.length} ${list.length === 1 ? "Ort" : "Orte"} · ${gebiete.join(" · ")}`, 72, 170);
+
+  const n = list.length;
+  const cols = n <= 1 ? 1 : (n <= 4 ? 2 : 3);
+  const rows = Math.ceil(n / cols);
+  const top = 220, bottom = 1210, gap = 20, pad = 72;
+  const gridW = COLLAGE_W - pad * 2, gridH = bottom - top;
+  const cellW = (gridW - gap * (cols - 1)) / cols;
+
+  const imgs = withPhotos ? await Promise.all(list.map(p => photoSrcOf(p) ? loadImage(photoSrcOf(p)) : null)) : list.map(() => null);
+  // Mit Fotos steht der Name unter der Kachel, ohne Foto mittig darin. Daran
+  // richtet sich die Kachelhöhe: so bleibt unten kein leerer Streifen.
+  const unterSchrift = imgs.some(Boolean) ? 34 : 0;
+  const cellH = (gridH - gap * (rows - 1) - unterSchrift * rows) / rows;
+
+  list.slice(0, cols * rows).forEach((p, i) => {
+    const r = Math.floor(i / cols), k = i % cols;
+    const inDerReihe = Math.min(cols, n - r * cols);
+    // Letzte Reihe mit weniger Kacheln: mittig setzen, nicht links ankleben.
+    const versatz = inDerReihe < cols ? ((cols - inDerReihe) * (cellW + gap)) / 2 : 0;
+    const x = pad + versatz + k * (cellW + gap), y = top + r * (cellH + gap + unterSchrift);
+    g.save();
+    roundRect(g, x, y, cellW, cellH, 16);
+    g.clip();
+    const img = imgs[i];
+    if (img) {
+      g.fillStyle = "#EFE8D8"; g.fillRect(x, y, cellW, cellH);
+      coverDraw(g, img, x, y, cellW, cellH, Number(p.photoX ?? 50), Number(p.photoY ?? 40));
+    } else {
+      g.fillStyle = "#F2EBDC"; g.fillRect(x, y, cellW, cellH);
+      g.fillStyle = "#15261F";
+      const lang = String(p.name).length;
+      const size = lang > 26 ? (cellW > 400 ? 28 : 22) : lang > 18 ? (cellW > 400 ? 32 : 25) : (cellW > 400 ? 38 : 30);
+      g.font = `400 ${size}px "Instrument Serif", Georgia, serif`;
+      g.textAlign = "center";
+      const words = String(p.name).split(" ");
+      const lines = [];
+      let line = "";
+      words.forEach(wd => {
+        const test = line ? line + " " + wd : wd;
+        if (g.measureText(test).width > cellW - 40 && line) { lines.push(line); line = wd; }
+        else line = test;
+      });
+      if (line) lines.push(line);
+      lines.slice(0, 3).forEach((ln, li) => {
+        g.fillText(ln, x + cellW / 2, y + cellH / 2 - (lines.slice(0, 3).length - 1) * size * 0.55 + li * size * 1.1, cellW - 40);
+      });
+      g.textAlign = "left";
+    }
+    g.restore();
+    if (img) {
+      g.fillStyle = "#6A675C";
+      g.font = '500 22px Inter, system-ui, sans-serif';
+      g.fillText(String(p.name).slice(0, 30), x + 2, y + cellH + 26);
+    }
+  });
+
+  g.strokeStyle = "#E4DCCB"; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(72, 1272); g.lineTo(COLLAGE_W - 72, 1272); g.stroke();
+  g.fillStyle = "#6A675C";
+  g.font = '700 22px Inter, system-ui, sans-serif';
+  g.fillText("BEST IN TOWN", 72, 1312);
+  return new Promise(res => c.toBlob(res, "image/png"));
+}
+async function shareCollage() {
+  if (!savedPlaces().length) return;
+  let blob = null;
+  try { blob = await buildCollage(true); } catch (e) { blob = null; }
+  // Wenn ein Fremdbild die Leinwand gesperrt hat (CORS), entsteht die Collage
+  // ohne Fotos — lieber ein sauberes Bild als gar keins.
+  if (!blob) { try { blob = await buildCollage(false); } catch (e) { blob = null; } }
+  if (!blob) { toast("Collage hat nicht geklappt."); return; }
+  if (window.BestMobile && window.BestMobile.shareImage) {
+    try {
+      await window.BestMobile.shareImage({ filename: "best-in-town-collage.png", data: blob, title: "Meine Orte", text: "Meine Lieblingsorte in Best in Town" });
+      return;
+    } catch (e) { /* Fallback unten */ }
+  }
+  try {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "best-in-town-collage.png";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast("Collage gespeichert.");
+  } catch (e) { toast("Collage hat nicht geklappt."); }
 }
 function tabsHtml() {
   const on = state.tab === "saved";
@@ -2873,6 +3016,7 @@ function tabsHtml() {
 }
 
 function renderHome() {
+  resetPhotoUse();
   const filled = Object.keys(CATS).filter(id => placesOf(id).length).length;
   const canSuggest = !state.canEdit && state.db && state.canVote;
   const f = parseQuery(state.query), tagSel = f.tags || [];
@@ -2905,8 +3049,8 @@ function renderHome() {
   // Bei aktiver Suche nur die Treffer: kein Spiel, kein Pate, keine Vorschläge.
   // Drei Ebenen, drei Aufgaben: Stadt = Krone, Ort = Tagesfrage.
   // Stadtweit nie ein Duell — auch nicht bei Gleichstand an der Spitze.
-  let html = savedMode ? renderSaved()
-    : placeMode ? renderPlaceView(state.placeView)
+  let html = placeMode ? renderPlaceView(state.placeView)
+    : savedMode ? renderSaved()
     : discMode ? renderDiscover()
     : (areaMode ? renderArea() : (filtering ? "" : (state.kiez ? eoBlock(eoGroupToday()) : "")));
   if (!filtering && !state.kiez && !discMode) {
@@ -3105,6 +3249,45 @@ function avatarStore() {
   if (typeof avatarCache !== "object" || Array.isArray(avatarCache)) avatarCache = {};
   return avatarCache;
 }
+// ---------- Vorschau-Fotos ----------
+// Solange keine eigenen Ortsfotos vorliegen, tragen frei lizenzierte Bilder
+// (Unsplash, kostenlos nutzbar) die Gestaltung. Sie ersetzen sich von selbst,
+// sobald ein echtes Foto am Ort hängt — das echte Foto hat immer Vorrang.
+// Zugeordnet wird nach Rubrik und stabiler Kennung, damit ein Ort immer
+// dasselbe Bild zeigt.
+const PREVIEW_PHOTOS = {
+  restaurant: ["1517248135467-4c7edcad34c4", "1552566626-52f8b828add9", "1414235077428-338989a2e8c0"],
+  imbiss: ["1550547660-d9450f859349", "1565299624946-b28f40a0ae38"],
+  cafe: ["1501339847302-ac426a4a7cbb", "1554118811-1e0d58224f24", "1493809842364-78817add7ffb"],
+  bar: ["1514933651103-005eec06c04b", "1470337458703-46ad1756a187"],
+  eisdiele: ["1497034825429-c343d7c6a68f"],
+  theater: [],
+  oper: [],
+  jazz: ["1415201364774-f6f0bb35f28f", "1511671782779-c97d3d27a1d4"],
+  museum: ["1554907984-15263bfd63bd"],
+  kino: ["1489599849927-2ee91cede3ba"],
+  aussicht: [],
+  club: ["1470229722913-7c0e2dbbafd3", "1511671782779-c97d3d27a1d4"],
+  shopping: ["1441986300917-64674bd600d8", "1445205170230-053b83016050"],
+  hotel: ["1590490360182-c33d57733427", "1560448204-e02f11c3d0e2"],
+  baeckerei: ["1501339847302-ac426a4a7cbb", "1493809842364-78817add7ffb"]
+};
+// Welche Vorschau wie oft im laufenden Aufbau benutzt wurde. So bekommt jeder
+// Ort einer Liste ein anderes Bild, solange der Vorrat reicht.
+let _photoUse = new Map();
+function resetPhotoUse() { _photoUse = new Map(); }
+function previewPhoto(p) {
+  const kat = mapCat(p.category);
+  const liste = Array.isArray(PREVIEW_PHOTOS[kat]) ? PREVIEW_PHOTOS[kat] : PREVIEW_PHOTOS.restaurant;
+  if (!liste.length) return "";   // bewusst ohne Bild
+  let best = liste[0], min = Infinity;
+  for (const id of liste) { const n = _photoUse.get(id) || 0; if (n < min) { min = n; best = id; } }
+  _photoUse.set(best, (_photoUse.get(best) || 0) + 1);
+  return `https://images.unsplash.com/photo-${best}?w=1200&q=75&auto=format&fit=crop`;
+}
+// Ein Bild für einen Ort: echtes Foto, sonst Vorschau, sonst nichts.
+function photoSrcOf(p) { return p && p.photo ? photoURL(p.photo) : (p ? previewPhoto(p) : ""); }
+
 function avatarURL(id) { return avatarStore()[id] || photoURL(id); }
 function avatarRemember(id, dataUrl) {
   if (!id || !dataUrl) return;
@@ -5144,7 +5327,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.188";
+const APP_VERSION = "1.0.192";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
