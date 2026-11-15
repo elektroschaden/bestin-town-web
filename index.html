@@ -1297,10 +1297,12 @@ const keyOfValue = v => (v >= 1 ? "joy" : v >= 0.5 ? "ok" : "no");
 
 // Städte. Orte ohne Stadt-Angabe gehören zu Berlin.
 const CITIES = [
-  { id: "berlin", name: "Berlin & Umland", search: "Berlin", country: "Deutschland" },
-  // Kein eigener Eintrag mehr: Berlin und sein Umland sind eine Sache. Der
-  // Datensatz bleibt für Altdaten auflösbar, erscheint aber nicht in der Auswahl.
-  { id: "berlin-umland", name: "Berlin & Umland", search: "Brandenburg", country: "Deutschland", hidden: true },
+  { id: "berlin", name: "Berlin", search: "Berlin", country: "Deutschland" },
+  // Eigene Gemeinden statt eines Sammelbegriffs: Wer in Erkner isst, sucht
+  // Erkner. Kleine Orte brauchen keine Gebiete — dort führt der Einstieg
+  // direkt zu den Orten.
+  { id: "erkner", name: "Erkner", search: "Erkner Brandenburg", country: "Deutschland" },
+  { id: "schoeneiche", name: "Schöneiche", search: "Schöneiche bei Berlin", country: "Deutschland" },
   { id: "freiburg", name: "Freiburg", search: "Freiburg im Breisgau", country: "Deutschland" },
   { id: "tuebingen", name: "Tübingen", search: "Tübingen", country: "Deutschland" },
   // Fest eingetragen (nicht aus places.cityName abgeleitet), damit der Name
@@ -1312,7 +1314,15 @@ const CITY = Object.fromEntries(CITIES.map(c => [c.id, c]));
 // Städte entstehen von selbst: Trägt jemand einen neuen Ort ein, erscheint er in der Auswahl.
 const slug = t => String(t || "").toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 function syncCities(places) {
-  (places || []).forEach(p => { if (p.city && !CITY[p.city]) { const ct = { id: p.city, name: p.cityName || p.city, search: p.cityName || p.city, country: p.country || "Deutschland" }; CITIES.push(ct); CITY[ct.id] = ct; } });
+  (places || []).forEach(p => {
+  // Altdaten-Kennung nicht als eigene Stadt anlegen: diese Orte gehören zu
+  // ihrer Gemeinde (rawCityOf leitet sie dorthin).
+  if (p.city === "berlin-umland") return;
+  if (p.city && !CITY[p.city]) {
+    const ct = { id: p.city, name: p.cityName || p.city, search: p.cityName || p.city, country: p.country || "Deutschland" };
+    CITIES.push(ct); CITY[ct.id] = ct;
+  }
+});
 }
 function cityByName(t) {
   t = String(t || "").trim().toLowerCase(); if (!t) return null;
@@ -1334,15 +1344,20 @@ document.addEventListener("change", e => {
 });
 
 function cityDatalist() { return `<datalist id="cityOptions">${CITIES.map(c => `<option value="${esc(c.id === "berlin" ? "Berlin" : c.name)}">`).join("")}</datalist>`; }
-const CITY_MERGE = { "berlin-umland": "berlin" };
-const rawCityOf = p => (CITY[p.city] ? p.city : "berlin");
-const cityOf = p => CITY_MERGE[rawCityOf(p)] || rawCityOf(p);
+// Altdaten: Früher lagen die Umland-Orte unter einer eigenen Kennung. Sie
+// gehören jetzt zu ihrer Gemeinde — erkannt am Ortsteil, ohne Datenumbau.
+const LEGACY_UMAND = "berlin-umland";
+const rawCityOf = p => {
+  if (p.city === LEGACY_UMAND) return slug(kiezOf(p) || "") || "berlin";
+  return CITY[p.city] ? p.city : "berlin";
+};
+const cityOf = p => rawCityOf(p);
 const curCity = () => CITY[state.city] || CITY.berlin;
 function loadCity() {
   try {
     const c = localStorage.getItem("bit-city");
     const v = c && /^[a-z0-9-]{1,200}$/.test(c) ? c : "berlin";
-    return CITY_MERGE[v] || v;
+    return CITY[v] ? v : "berlin";
   } catch (e) { return "berlin"; }
 }
 function saveCity(c) { try { localStorage.setItem("bit-city", c); } catch (e) {} }
@@ -2582,12 +2597,8 @@ function areaNameOf(p) {
 }
 // Wo das Gebiet außerhalb der Stadt liegt, steht das Land dabei: Erkner liegt
 // in Brandenburg, nicht in Berlin.
-function regionOf(kiez) {
-  // Ein Gebiet außerhalb der Stadt: dort steht das Land dabei. Erkannt wird es
-  // an der Herkunft der Orte (früher eigene Stadt „berlin-umland").
-  const p = state.places.find(x => cityOf(x) === state.city && areaNameOf(x) === kiez);
-  return p && rawCityOf(p) === "berlin-umland" ? "Brandenburg" : "";
-}
+// Kein Zusatz mehr nötig: Erkner und Schöneiche sind eigene Städte.
+function regionOf() { return ""; }
 // Anzeigename eines Gebiets. Liegt es außerhalb der Stadt, steht das Land im
 // Namen: „Erkner · Brandenburg". Der Schlüssel (data-area) bleibt „Erkner".
 function areaLabel(kiez) { const r = regionOf(kiez); return r ? kiez + " · " + r : kiez; }
@@ -4434,8 +4445,7 @@ function patronCities(x) {
 function patronEntry(x, city) {
   const list = patronCities(x);
   return list.find(e => e.city === city)
-    || list.find(e => CITY_MERGE[e.city] === city)
-    || list.find(e => CITY_MERGE[city] === e.city)
+    || list.find(e => e.city === LEGACY_UMAND && e.kieze.some(k => slug(k) === city))
     || null;
 }
 function kiezeFor(x, city) {
@@ -4462,8 +4472,21 @@ function pateRole(x, city, kiez) {
   return `${areaWord(city).pate} · ${shown} · ${cityLabel(city)}`;
 }
 // Berlin und Umland sind eine Stadt: ein Pate des Umlands gilt auch für Berlin.
-const sameCity = (a, b) => a === b || CITY_MERGE[a] === b || CITY_MERGE[b] === a || CITY_MERGE[a] === CITY_MERGE[b];
-function entriesFor(x, city) { return patronCities(x).filter(e => sameCity(e.city, city)); }
+const sameCity = (a, b) => a === b;
+// Stammt die Gemeinde aus der alten Sammelkennung? Dann gilt der damalige
+// Stadt-Pate des Umlands auch für sie.
+function fromLegacyUmland(city) {
+  return (state.places || []).some(p => p.city === LEGACY_UMAND && slug(kiezOf(p) || "") === city);
+}
+function entriesFor(x, city) {
+  // Ein Pate gilt für die Stadt, für die er eingetragen ist — und für jede
+  // Gemeinde, die in seinen Gebieten steht (früher lagen Erkner und Schöneiche
+  // unter Berlin bzw. „Berliner Umland").
+  const legacy = fromLegacyUmland(city);
+  return patronCities(x).filter(e => e.city === city
+    || e.kieze.some(k => slug(k) === city)
+    || (legacy && e.city === LEGACY_UMAND && !e.kieze.length));
+}
 function stadtPate(city) {
   for (const x of state.paten) if (entriesFor(x, city).some(e => !e.kieze.length)) return x;
   return null;
@@ -4923,7 +4946,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.181";
+const APP_VERSION = "1.0.182";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
