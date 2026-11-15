@@ -948,6 +948,30 @@ body.bit-no-anim .winner-row.entering, body.bit-no-anim .hero-flat.entering { an
 /* Beim ersten Aufbau erscheint alles fertig – kein gestaffeltes Einfliegen,
    solange der Begrüßungsbildschirm ausblendet. */
 body.boot-reveal .ranking > li { animation: none !important; }
+
+/* ---------- Entdecken: Gebiete als erste Ebene ---------- */
+.disc-h { font-family: var(--font-display); font-size:1.875rem; line-height:1.08; font-weight:400;
+  margin:14px 0 0; }
+.disc-sub { font-size:0.75rem; color: var(--muted); margin:6px 0 0; line-height:1.45; }
+.disc-list { margin-top:14px; }
+.disc-row { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
+  width:100%; padding:14px 0; border:0; border-top:1px solid var(--line); background:none;
+  font:inherit; color:inherit; text-align:left; cursor:pointer; }
+.disc-thumbs { display:flex; gap:5px; }
+.disc-thumbs i { width:44px; height:44px; border-radius:6px; overflow:hidden; background: var(--sign-soft);
+  display:grid; place-items:center; font-family: var(--font-display); font-size:1.125rem; color: var(--muted);
+  font-style:normal; }
+.disc-thumbs img { width:100%; height:100%; object-fit:cover; display:block; }
+.disc-nm { display:block; font-family: var(--font-display); font-size:1.1875rem; line-height:1.15; }
+.disc-ct { display:block; font-size:0.7188rem; color: var(--muted); margin-top:2px; }
+.disc-chev { color: var(--muted); font-size:1rem; line-height:1; opacity:.7; }
+.disc-row:active { background: var(--sign-soft); }
+.disc-all { margin-top:14px; width:100%; padding:12px 0; border:0; border-top:1px solid var(--line);
+  background:none; font:inherit; font-size:0.75rem; color: var(--muted); cursor:pointer; }
+.disc-empty { margin-top:16px; padding:18px 16px; border:1px solid var(--line); border-radius:14px;
+  background: var(--surface); }
+.disc-empty h3 { font-family: var(--font-display); font-weight:400; font-size:1.1875rem; margin:0 0 4px; }
+.disc-empty p { margin:0; font-size:0.8125rem; color: var(--muted); line-height:1.45; }
 </style>
   </div>
 </div>
@@ -2125,6 +2149,17 @@ document.addEventListener("click", async e => {
   }
   openShareSheet(d, key);
 });
+// Gebiet wählen: setzt den Ortsteil und zeigt dessen Ansicht.
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-area]");
+  if (!b) return;
+  e.stopPropagation();
+  state.kiez = b.dataset.area || "";
+  state.group = null; state.near = null; state.query = "";
+  if (location.hash) location.hash = "";
+  render();
+  window.scrollTo({ top: 0, behavior: "instant" });
+});
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeShare(); });
 
 // ---------- Entweder – oder ----------
@@ -2525,6 +2560,51 @@ function groupTiles() {
     </button>`;
   }).join("")}</section>`;
 }
+// ---------- Entdecken ----------
+// Die kuratierte Einheit ist das Gebiet, nicht die Stadt: Berlin hat viele,
+// Erkner nur eines. Was hier steht, ist eine Auswahl — keine Rangfolge.
+function discoverAreas() {
+  const map = new Map();
+  state.places.forEach(p => {
+    if (cityOf(p) !== state.city || !CATS[mapCat(p.category)]) return;
+    const k = kiezOf(p) || "";
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(p);
+  });
+  const areas = [...map.entries()].filter(([k, list]) => k && list.length).map(([k, list]) => ({
+    kiez: k,
+    n: list.length,
+    thumbs: list.filter(p => p.photo).slice(0, 3),
+  }));
+  areas.sort((a, b) => a.kiez.localeCompare(b.kiez, "de"));
+  const loose = (map.get("") || []).length;
+  return { areas, loose };
+}
+function renderDiscover() {
+  const { areas, loose } = discoverAreas();
+  const total = areas.reduce((sum, a) => sum + a.n, 0) + loose;
+  const stadt = curCity().name;
+  if (!total) {
+    return `<h1 class="disc-h">Unsere<br>Lieblingsorte.</h1>
+      <div class="disc-empty"><h3>${esc(stadt)} ist im Aufbau</h3>
+      <p>${state.canEdit ? "Trag den ersten Ort ein — dann steht hier das Gebiet." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
+  }
+  const rows = areas.map(a => {
+    const thumbs = a.thumbs.length
+      ? a.thumbs.map(x => `<i><img src="${photoURL(x.photo)}" alt="" loading="lazy" draggable="false"></i>`).join("")
+      : `<i>${esc(a.kiez.charAt(0).toUpperCase())}</i>`;
+    return `<button type="button" class="disc-row" data-area="${esc(a.kiez)}">
+      <span class="disc-thumbs" aria-hidden="true">${thumbs}</span>
+      <span><span class="disc-nm">${esc(a.kiez)}</span><span class="disc-ct">${a.n} ${a.n === 1 ? "Lieblingsort" : "Lieblingsorte"}</span></span>
+      <span class="disc-chev" aria-hidden="true">›</span></button>`;
+  }).join("");
+  const gebiete = areas.length;
+  return `<h1 class="disc-h">Unsere<br>Lieblingsorte.</h1>
+    <p class="disc-sub">${gebiete} ${gebiete === 1 ? "Gebiet" : "Gebiete"}, ${total} ${total === 1 ? "Ort" : "Orte"}, ausgewählt von Menschen, die dort wohnen.</p>
+    <div class="disc-list">${rows}</div>
+    ${(loose || gebiete) ? `<button type="button" class="disc-all" data-area="">Alle Orte in ${esc(stadt)}</button>` : ""}`;
+}
+
 function renderHome() {
   const filled = Object.keys(CATS).filter(id => placesOf(id).length).length;
   const canSuggest = !state.canEdit && state.db && state.canVote;
@@ -2606,6 +2686,11 @@ function renderHome() {
   }
   // Beim Bearbeiten verschwindet alles andere: nur das Formular bleibt.
   if ((state.canEdit || state.pateSelf) && state.pateForm) html = patenAdminBlock();
+  // Stadt-Ebene: die neue Entdecken-Ansicht. Sobald ein Gebiet, eine Suche
+  // oder der Bearbeiten-Modus aktiv ist, bleibt die gewohnte Ansicht.
+  if (!filtering && !state.kiez && !state.group && !state.near && !state.canEdit && !state.pateSelf) {
+    html = renderDiscover();
+  }
   const view = $("view");
   const keepSuggest = $("suggestForm");
   const keepPate = $("pateForm");
@@ -4739,7 +4824,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.171";
+const APP_VERSION = "1.0.172";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
