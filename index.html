@@ -975,6 +975,33 @@ body.boot-reveal .ranking > li { animation: none !important; }
   background: var(--surface); }
 .disc-empty h3 { font-family: var(--font-display); font-weight:400; font-size:1.1875rem; margin:0 0 4px; }
 .disc-empty p { margin:0; font-size:0.8125rem; color: var(--muted); line-height:1.45; }
+
+/* ---------- Gebiet: die Orte eines Gebiets, alphabetisch ---------- */
+.area-h { font-family: var(--font-display); font-size:2.125rem; line-height:1.06; font-weight:400; margin:10px 0 0; }
+.area-sub { font-size:0.7188rem; color: var(--muted); margin:5px 0 0; line-height:1.4; }
+.area-filter { display:flex; gap:16px; margin:16px 0 2px; overflow-x:auto; scrollbar-width:none; }
+.area-filter::-webkit-scrollbar { display:none; }
+.area-filter button { border:0; background:none; padding:0 0 4px; font:inherit; font-size:0.75rem;
+  color: var(--muted); white-space:nowrap; cursor:pointer; }
+.area-filter button.on { color: var(--ink); font-weight:600; box-shadow: inset 0 -2px 0 var(--ink); }
+.area-list { margin-top:8px; }
+.area-item { display:block; width:100%; padding:0 0 22px; border:0; background:none; font:inherit;
+  color:inherit; text-align:left; cursor:pointer; border-top:1px solid var(--line); }
+.area-item:first-child { border-top:0; }
+.ai-photo { display:block; width:100%; aspect-ratio:4/3; border-radius:12px; overflow:hidden;
+  background: var(--sign-soft); margin:16px 0 0; }
+.ai-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+.area-back { display:inline-block; margin:16px 0 0; padding:0; border:0; background:none; font:inherit;
+  font-size:0.6875rem; letter-spacing:.14em; text-transform:uppercase; color: var(--muted); cursor:pointer; }
+.area-item.ohne-foto { padding-top:14px; }
+.ai-kat { display:inline-flex; align-items:center; gap:6px; color: var(--muted); margin-top:0; }
+.ai-kat .k-ico { width:15px; height:15px; stroke-width:1; opacity:.8; }
+.ai-kat em { font-style:normal; font-size:0.625rem; letter-spacing:.16em; text-transform:uppercase; }
+.area-item.ohne-foto .ai-name { margin-top:6px; }
+.ai-name { display:block; font-family: var(--font-display); font-size:1.3125rem; line-height:1.15; margin-top:10px; }
+.ai-line { display:block; font-size:0.7812rem; color: var(--muted); line-height:1.45; margin-top:3px;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.area-empty { margin-top:18px; }
 </style>
   </div>
 </div>
@@ -1395,7 +1422,7 @@ const state = {
   db: null, uid: null, canEdit: false, canVote: false,
   area: "alle", query: "", adminOpen: false, tierByCat: {}, tagByCat: {}, formTags: [], duels: {}, duelVotes: [], eoDraft: null, eoBusy: false, eoCur: null, eoPinSeen: false, shift: null, form: null, confirmDelete: null, dragging: false, editing: false, sessionKnown: false, showJoin: false, pateSelf: false, opens: 0, opensCounted: false, near: null, nearRadius: 5000, nearBusy: false,
   busy: false, pending: null, note: "",
-  city: loadCity(), kiez: "", group: "", suggestions: [], trusted: new Set(), trustedLegacy: new Set(), open: new Set(), paten: [], pateForm: null, suggest: null, thanks: false, nextForm: null
+  city: loadCity(), kiez: "", group: "", areaFilter: "", suggestions: [], trusted: new Set(), trustedLegacy: new Set(), open: new Set(), paten: [], pateForm: null, suggest: null, thanks: false, nextForm: null
 };
 // Das zuletzt gewählte Gebiet wird bewusst NICHT beim Start geladen: Die App
 // beginnt in „Entdecken" (Stadt-Ebene). Sonst überspringt sie die erste Seite
@@ -2156,6 +2183,19 @@ document.addEventListener("click", async e => {
   openShareSheet(d, key);
 });
 // Gebiet wählen: setzt den Ortsteil und zeigt dessen Ansicht.
+// Gebiet: zurück zur Stadt, Rubrikfilter, Ort öffnen.
+document.addEventListener("click", e => {
+  const back = e.target.closest && e.target.closest("[data-area-back]");
+  if (back) { state.kiez = ""; state.areaFilter = ""; saveKiez(""); render(); window.scrollTo({top:0}); return; }
+  const chip = e.target.closest && e.target.closest("[data-area-cat]");
+  if (chip) { state.areaFilter = chip.dataset.areaCat || ""; render(); return; }
+  const item = e.target.closest && e.target.closest("[data-open-place]");
+  if (item) {
+    const pl = state.places.find(x => x.id === item.dataset.openPlace);
+    if (pl) { state.open.add(pl.id); const c = mapCat(pl.category); if (CATS[c]) location.hash = "#" + c; render(); }
+    return;
+  }
+});
 document.addEventListener("click", e => {
   const b = e.target.closest && e.target.closest("[data-area]");
   if (!b) return;
@@ -2611,6 +2651,41 @@ function renderDiscover() {
     ${(loose || gebiete) ? `<button type="button" class="disc-all" data-area="">Alle Orte in ${esc(stadt)}</button>` : ""}`;
 }
 
+// ---------- Gebiet ----------
+// Ein Gebiet ist eine Auswahl, keine Rangfolge: alle Orte alphabetisch, die
+// Rubriken sind Filter. Deshalb stehen hier keine Punkte und keine Nummern.
+function renderArea() {
+  const city = state.city, kiez = state.kiez;
+  const all = state.places.filter(p => cityOf(p) === city && kiezOf(p) === kiez && CATS[mapCat(p.category)]);
+  const areaOf = p => { const c = CATS[mapCat(p.category)]; return c && c.area ? c.area.id : ""; };
+  const present = AREAS.filter(a => all.some(p => areaOf(p) === a.id));
+  const filter = state.areaFilter || "";
+  const shown = (filter ? all.filter(p => areaOf(p) === filter) : all.slice())
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "de"));
+  const pat = pateFor(city, kiez);
+  const stadt = curCity().name;
+  const n = all.length;
+  const chips = present.length > 1
+    ? `<div class="area-filter" role="tablist">
+        <button type="button" class="${filter ? "" : "on"}" data-area-cat="">Alle</button>
+        ${present.map(a => `<button type="button" class="${filter === a.id ? "on" : ""}" data-area-cat="${a.id}">${esc(a.name)}</button>`).join("")}
+      </div>` : "";
+  const rows = shown.map(p => {
+    const line = cleanText(p.reason || "");
+    const kat = `<span class="ai-kat">${CAT_ICON[mapCat(p.category)] || ""}<em>${esc((CATS[mapCat(p.category)] || {}).name || "")}</em></span>`;
+    return `<button type="button" class="area-item${p.photo ? "" : " ohne-foto"}" data-open-place="${esc(p.id)}">
+      ${p.photo ? `<span class="ai-photo"><img src="${photoURL(p.photo)}" alt="" loading="lazy" draggable="false"></span>` : kat}
+      <span class="ai-name">${esc(p.name)}</span>
+      ${line ? `<span class="ai-line">${esc(line)}</span>` : ""}
+    </button>`;
+  }).join("");
+  return `<button type="button" class="area-back" data-area-back>‹ ${esc(stadt)}</button>
+    <h1 class="area-h">${esc(kiez)}</h1>
+    <p class="area-sub">${n} ${n === 1 ? "Lieblingsort" : "Lieblingsorte"}${pat ? " · Ausgewählt von " + esc(pat.name) : ""}</p>
+    ${chips}
+    <div class="area-list">${rows || `<p class="area-sub area-empty">In diesem Gebiet ist noch nichts eingetragen.</p>`}</div>`;
+}
+
 function renderHome() {
   const filled = Object.keys(CATS).filter(id => placesOf(id).length).length;
   const canSuggest = !state.canEdit && state.db && state.canVote;
@@ -2620,6 +2695,8 @@ function renderHome() {
   // Sie hängt bewusst NICHT an der Rolle — Pate und Leitung sehen dieselbe
   // erste Seite, ihre Werkzeuge stehen darunter.
   const discMode = !filtering && !state.kiez && !state.group && !state.near;
+  // Gebietsebene: ein Gebiet, keine Rubrik geöffnet, keine Suche, keine Nähe.
+  const areaMode = !filtering && !!state.kiez && !state.group && !state.near;
   // In einem Ort führt der erste Blick auf die fünf Gruppen; erst die gewählte
   // Gruppe zeigt ihre Rubriken. Bei aktiver Suche bleibt die flache Liste.
   const gruppenAnsicht = !filtering && !state.group && !state.near;
@@ -2639,7 +2716,7 @@ function renderHome() {
   // Bei aktiver Suche nur die Treffer: kein Spiel, kein Pate, keine Vorschläge.
   // Drei Ebenen, drei Aufgaben: Stadt = Krone, Ort = Tagesfrage.
   // Stadtweit nie ein Duell — auch nicht bei Gleichstand an der Spitze.
-  let html = discMode ? renderDiscover() : (filtering ? "" : (state.kiez ? eoBlock(eoGroupToday()) : ""));
+  let html = discMode ? renderDiscover() : (areaMode ? renderArea() : (filtering ? "" : (state.kiez ? eoBlock(eoGroupToday()) : "")));
   if (!filtering && !state.kiez && !discMode) {
     // Darunter, stadtweit: die Krone. In meiner Nähe ist ein eigener Ort —
     // dort zaehlt der beste Ort im Umkreis, nicht die vorher gewaehlte Stadt.
@@ -2649,7 +2726,7 @@ function renderHome() {
   if (state.near) { html += nearBar(); html += nearPlaces(); }
   if (aktiveGruppe) html += `<nav class="topnav" aria-label="Zurück"><button type="button" class="back" data-group-back>← ${esc(state.kiez || curCity().name)}</button><span class="topnav-title">${esc(aktiveGruppe.name)}</span></nav>`;
   if (aktiveGruppe) html += groupSections(aktiveGruppe.id);
-  if (discMode) { /* Entdecken steht schon */ }
+  if (discMode || areaMode) { /* Entdecken bzw. Gebiet steht schon */ }
   else if (gruppenAnsicht && !cityEmpty) html += groupTiles();
   else if (rows && !state.near) html += `<section class="karte" aria-label="Platz 1 je Rubrik">${rows}</section>`;
   else if (filtering) html += `<div class="empty"><h3>Dazu gibt es hier noch nichts</h3><p>Versuch es mit anderen Worten oder wähl oben „Überall“.</p></div>`;
@@ -2657,18 +2734,18 @@ function renderHome() {
   else if (state.kiez) html += `<div class="empty"><h3>In ${esc(state.kiez)} gibt es hier noch nichts</h3><p>Wähl oben „Überall“, um alle Orte zu sehen.</p></div>`;
   const xr = x ? pateRole(x, state.city, state.kiez) : "";
   const xk = !!xr && !xr.startsWith("Stadt-Pate");
-  if (x && !filtering && !discMode) html += `<section class="pate2" aria-label="${xk ? "Dein " + areaWord(state.city).pate : "Dein Stadt-Pate"}">
+  if (x && !filtering && !discMode && !areaMode) html += `<section class="pate2" aria-label="${xk ? "Dein " + areaWord(state.city).pate : "Dein Stadt-Pate"}">
       <span class="pate2-mark">${x.photo ? pAvatar(x, x.name) : esc(String(x.name || "?").trim().charAt(0).toUpperCase())}</span>
       <span class="pate2-text">
         <span class="pate2-role">${"Dein " + xr}</span>
         <span class="pate2-name">${esc(x.name)}${x.note ? `<span class="pate2-note">, ${esc(String(x.note).trim().replace(/[.,;]+$/, ""))}</span>` : ""}${state.canEdit && state.mode === "owner" ? `<button type="button" class="btn icon name-edit" data-pate-edit="${esc(x.id)}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>` : ""}</span>
       </span>
     </section>`;
-  if (x && !state.kiez && !filtering && !discMode) {
+  if (x && !state.kiez && !filtering && !discMode && !areaMode) {
     const more = kiezPaten(state.city).filter(y => y.id !== x.id);
     if (more.length) html += `<div class="pate-more" aria-label="Weitere Paten">${more.slice(0, 6).map(y => `<button type="button" class="pm" data-pm="${esc(y.id)}" title="${esc(y.name)} · ${esc(pateRole(y, state.city, ""))}">${y.photo ? `<img src="${photoURL(y.photo)}" alt="" loading="lazy">` : esc(String(y.name || "?").trim().charAt(0).toUpperCase())}</button>`).join("")}${more.length > 6 ? `<span class="pm-n">+${more.length - 6}</span>` : ""}<span class="pm-t">${more.length === 1 ? esc(more[0].name) + " · " + esc(kiezFor(more[0], state.city).join(", ")) : "Paten in " + more.length + " " + areaWord(state.city).dat}</span></div>`;
   }
-  if (!filtering && !discMode) html += suggestCard();
+  if (!filtering && !discMode && !areaMode) html += suggestCard();
   // Von der Gesamtübersicht aus direkt einen Ort eintragen können — nicht
   // erst in eine Rubrik wechseln müssen, das ist der Normalfall. Erst die
   // Google-Suche (Name, Adresse, Rubrik-Vermutung); nur wer den Ort dort
@@ -4830,7 +4907,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.176";
+const APP_VERSION = "1.0.177";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
