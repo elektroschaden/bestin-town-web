@@ -2220,6 +2220,7 @@ document.addEventListener("click", e => {
     state.tab = tab.dataset.tab;
     if (state.tab === "saved") state.placeView = null;
     render(); window.scrollTo({ top: 0 });
+    if (state.tab === "saved") prefetchSaved();
     return;
   }
   if (e.target.closest && e.target.closest("[data-sv-share]")) { shareSaved(); return; }
@@ -2263,6 +2264,7 @@ document.addEventListener("click", e => {
     try { localStorage.setItem("bit-saved", JSON.stringify(list)); } catch (err) {}
     render();
     if (i < 0) { const gemerkt = state.places.find(x => x.id === id); if (gemerkt) cachePlacePhoto(gemerkt); }
+    else prefetchSaved();
     return;
   }
 });
@@ -2894,7 +2896,7 @@ function loadImage(src) {
   });
 }
 function coverDraw(g, img, x, y, w, h, fx = 50, fy = 40) {
-  const iw = img.naturalWidth, ih = img.naturalHeight;
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
   if (!iw || !ih) return;
   const s = Math.max(w / iw, h / ih);
   const dw = iw * s, dh = ih * s;
@@ -2920,9 +2922,9 @@ function drawStamp(g, cx, cy, r) {
   g.translate(cx - 150 * k, cy - 150 * k);
   g.scale(k, k);
   g.strokeStyle = "#1C1A16";
-  g.lineWidth = 5;   g.beginPath(); g.arc(150, 150, 140, 0, Math.PI * 2); g.stroke();
-  g.lineWidth = 1.5; g.beginPath(); g.arc(150, 150, 131, 0, Math.PI * 2); g.stroke();
-  g.lineWidth = 3;   g.beginPath(); g.arc(150, 150, 90, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 4.5; g.beginPath(); g.arc(150, 150, 139.5, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 1.4; g.beginPath(); g.arc(150, 150, 130, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 2.6; g.beginPath(); g.arc(150, 150, 89, 0, Math.PI * 2); g.stroke();
 
   const arcText = (text, radius, mitte, umgedreht, groesse) => {
     g.font = `900 ${groesse}px Inter, system-ui, sans-serif`;
@@ -2968,6 +2970,34 @@ function drawStamp(g, cx, cy, r) {
   g.restore();
 }
 
+
+// Die Collage braucht keine 1280 px breiten Bilder: halbe Groesse laedt
+// viermal schneller und reicht fuer eine Kachel von ~490 px.
+function collageSrc(p) {
+  const lok = localPhotoSrc(p);
+  if (p.photo) return lok || photoURL(p.photo);
+  if (lok) return lok;
+  const c = commonsPhoto(p);
+  if (c) return c.s || c.u;
+  const vorschau = previewPhoto(p);
+  return vorschau ? vorschau.replace(/w=\d+/, "w=800") : "";
+}
+// Bitmap statt <img>: Android-WebView decodiert createImageBitmap deutlich
+// schneller als ein Bildelement, das erst in den Baum eingehaengt wird.
+async function loadBitmap(src, ersatz) {
+  try {
+    const res = await fetch(src, { mode: "cors" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (window.createImageBitmap) return await createImageBitmap(blob);
+    return await new Promise(r => {
+      const img = new Image(); img.crossOrigin = "anonymous";
+      img.onload = () => r(img); img.onerror = () => r(null); img.src = src;
+    });
+  } catch (e) {
+    return ersatz && ersatz !== src ? await loadBitmap(ersatz) : null;
+  }
+}
 async function buildCollage(withPhotos) {
   resetPhotoUse();
   const list = savedPlaces();
@@ -2978,6 +3008,7 @@ async function buildCollage(withPhotos) {
   try {
     await document.fonts.load('400 64px "Instrument Serif"');
     await document.fonts.load('500 24px Inter');
+    await document.fonts.load('900 64px Inter');   // der Stempel braucht die schwere Schrift
   } catch (e) { /* Systemschrift ist der Rückfall */ }
 
   g.fillStyle = "#15261F";
@@ -2995,7 +3026,13 @@ async function buildCollage(withPhotos) {
   const gridW = COLLAGE_W - pad * 2, gridH = bottom - top;
   const cellW = (gridW - gap * (cols - 1)) / cols;
 
-  const imgs = withPhotos ? await Promise.all(list.map(p => photoSrcOf(p) ? loadImage(photoSrcOf(p)) : null)) : list.map(() => null);
+  const imgs = withPhotos
+    ? await Promise.all(list.map(p => {
+        const src = collageSrc(p);
+        const c = commonsPhoto(p);
+        return src ? loadBitmap(src, c ? c.u : src) : null;
+      }))
+    : list.map(() => null);
   // Mit Fotos steht der Name unter der Kachel, ohne Foto mittig darin. Daran
   // richtet sich die Kachelhöhe: so bleibt unten kein leerer Streifen.
   const unterSchrift = imgs.some(Boolean) ? 34 : 0;
@@ -3063,13 +3100,20 @@ async function buildCollage(withPhotos) {
     if (zeilen.length > 2) sichtbar[1] = sichtbar[1].replace(/[^ ]*$/, "") + "…";
     sichtbar.forEach((z, i) => g.fillText(z, pad, COLLAGE_H - 44 + i * 18));
   }
-  drawStamp(g, COLLAGE_W - pad - 105, 72 + 105, 105);
+  drawStamp(g, 884, 148, 88);   // oben 60, rechts 36 zur Rasterkante, unten 64 Luft zum Raster
   // JPEG statt PNG: kein Alphakanal (das war der Schwarz-Fehler auf Android),
   // deutlich kleiner und schneller.
   return new Promise(res => c.toBlob(res, "image/jpeg", 0.92));
 }
 async function shareCollage() {
   if (!savedPlaces().length) return;
+  const knopf = document.querySelector("[data-sv-collage]");
+  const alt = knopf ? knopf.textContent : "";
+  if (knopf) { knopf.disabled = true; knopf.textContent = "Collage wird erstellt …"; }
+  try { await shareCollageInner(); }
+  finally { if (knopf && knopf.isConnected) { knopf.disabled = false; knopf.textContent = alt; } }
+}
+async function shareCollageInner() {
   let blob = null;
   try { blob = await buildCollage(true); } catch (e) { blob = null; }
   // Wenn ein Fremdbild die Leinwand gesperrt hat (CORS), entsteht die Collage
@@ -3090,6 +3134,22 @@ async function shareCollage() {
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     toast("Collage gespeichert.");
   } catch (e) { toast("Collage hat nicht geklappt."); }
+}
+
+// Beim Oeffnen von "Meine Orte" werden die Bilder der gemerkten Orte im
+// Hintergrund abgelegt. Die erste Collage findet sie dann schon vor — das war
+// der Grund, warum sie auf dem Telefon halbe Minuten brauchte.
+let _laedtVor = false;
+async function prefetchSaved() {
+  if (_laedtVor) return;
+  if (!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem)) return;
+  _laedtVor = true;
+  try {
+    for (const pl of savedPlaces()) {
+      if (photoCache()[pl.id]) continue;
+      await cachePlacePhoto(pl, true);
+    }
+  } finally { _laedtVor = false; }
 }
 function tabsHtml() {
   const on = state.tab === "saved";
@@ -3389,22 +3449,22 @@ function previewPhoto(p) {
 // nicht nur die Stimmung. Sobald ein eigenes Foto am Ort hängt, gewinnt das.
 // Quelle und Lizenz stehen im Bild selbst und in der Ortsansicht.
 const COMMONS_PHOTOS = {
-  "club-berghain": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Berghain_Berlin_Facade_Detail.jpg/1280px-Berghain_Berlin_Facade_Detail.jpg", c: "Ben Kaden", l: "CC BY 2.0", p: "https://commons.wikimedia.org/wiki/File:Berghain_Berlin_Facade_Detail.jpg" },
-  "club-kater": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Kater_Blau_Berlin.JPG/1280px-Kater_Blau_Berlin.JPG", c: "Dirk Ingo Franke", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Kater_Blau_Berlin.JPG" },
+  "club-berghain": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Berghain_Berlin_Facade_Detail.jpg/1280px-Berghain_Berlin_Facade_Detail.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Berghain_Berlin_Facade_Detail.jpg/960px-Berghain_Berlin_Facade_Detail.jpg", c: "Ben Kaden", l: "CC BY 2.0", p: "https://commons.wikimedia.org/wiki/File:Berghain_Berlin_Facade_Detail.jpg" },
+  "club-kater": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Kater_Blau_Berlin.JPG/1280px-Kater_Blau_Berlin.JPG", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Kater_Blau_Berlin.JPG/960px-Kater_Blau_Berlin.JPG", c: "Dirk Ingo Franke", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Kater_Blau_Berlin.JPG" },
   "club-tresor": { u: "https://upload.wikimedia.org/wikipedia/commons/6/64/Tresor_Berlin_2008_Facade.jpg", c: "Boca Dorada", l: "CC BY-SA 2.0", p: "https://commons.wikimedia.org/wiki/File:Tresor_Berlin_2012.jpg" },
-  "club-ritter-butzke": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg/1280px-Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg", c: "Zeitfixierer", l: "CC BY-SA 2.0", p: "https://commons.wikimedia.org/wiki/File:Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg" },
-  "theater-deutsches-theater": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Deutsches_Theater_Berlin_2024-05-09_01.jpg/1280px-Deutsches_Theater_Berlin_2024-05-09_01.jpg", c: "Leonhard Lenz", l: "CC0", p: "https://commons.wikimedia.org/wiki/File:Deutsches_Theater_Berlin_2024-05-09_01.jpg" },
-  "theater-staatsoper": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/Berlin_-_Staatsoper_Unter_den_Linden.jpg/1280px-Berlin_-_Staatsoper_Unter_den_Linden.jpg", c: "Marek Śliwecki", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin_-_Staatsoper_Unter_den_Linden.jpg" },
-  "theater-philharmonie": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Berlin_Philharmonie_asv2018-05_img2.jpg/1280px-Berlin_Philharmonie_asv2018-05_img2.jpg", c: "A.Savin", l: "FAL", p: "https://commons.wikimedia.org/wiki/File:Berlin_Philharmonie_asv2018-05_img2.jpg" },
-  "theater-des-westens": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg/1280px-Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg", c: "A.Savin", l: "CC BY-SA 3.0", p: "https://commons.wikimedia.org/wiki/File:Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg" },
-  "theater-renaissance": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Charlottenburg_Renaissance-Theater_2014-001.jpg/1280px-Charlottenburg_Renaissance-Theater_2014-001.jpg", c: "Fridolin freudenfett", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Charlottenburg_Renaissance-Theater_2014-001.jpg" },
-  "supermarkt-kadewe-feinkost": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/KaDeWe_Rolltreppe.jpg/1280px-KaDeWe_Rolltreppe.jpg", c: "Fridolin freudenfett", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:KaDeWe_Rolltreppe.jpg" },
-  "mode-bikini-berlin": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Berlin%2C_Bikini.jpg/1280px-Berlin%2C_Bikini.jpg", c: "O.Gaudig", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin,_Bikini.jpg" },
-  "hotel-grand-hyatt": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/2023_Grand_Hyatt_Hotel_Berlin.jpg/1280px-2023_Grand_Hyatt_Hotel_Berlin.jpg", c: "Bärwinkel,Klaus", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:2023_Grand_Hyatt_Hotel_Berlin.jpg" },
-  "museum-naturkunde": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg/1280px-Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg", c: "Phyrexian", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg" },
-  "museum-altes": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/A-Trane_Berlin_Eingang.jpg/1280px-A-Trane_Berlin_Eingang.jpg", c: "Gerd Fahrenhorst", l: "CC BY 4.0", p: "https://commons.wikimedia.org/wiki/File:A-Trane_Berlin_Eingang.jpg" },
+  "club-ritter-butzke": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg/1280px-Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg/960px-Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg", c: "Zeitfixierer", l: "CC BY-SA 2.0", p: "https://commons.wikimedia.org/wiki/File:Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg" },
+  "theater-deutsches-theater": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Deutsches_Theater_Berlin_2024-05-09_01.jpg/1280px-Deutsches_Theater_Berlin_2024-05-09_01.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Deutsches_Theater_Berlin_2024-05-09_01.jpg/960px-Deutsches_Theater_Berlin_2024-05-09_01.jpg", c: "Leonhard Lenz", l: "CC0", p: "https://commons.wikimedia.org/wiki/File:Deutsches_Theater_Berlin_2024-05-09_01.jpg" },
+  "theater-staatsoper": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/Berlin_-_Staatsoper_Unter_den_Linden.jpg/1280px-Berlin_-_Staatsoper_Unter_den_Linden.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/Berlin_-_Staatsoper_Unter_den_Linden.jpg/960px-Berlin_-_Staatsoper_Unter_den_Linden.jpg", c: "Marek Śliwecki", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin_-_Staatsoper_Unter_den_Linden.jpg" },
+  "theater-philharmonie": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Berlin_Philharmonie_asv2018-05_img2.jpg/1280px-Berlin_Philharmonie_asv2018-05_img2.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Berlin_Philharmonie_asv2018-05_img2.jpg/960px-Berlin_Philharmonie_asv2018-05_img2.jpg", c: "A.Savin", l: "FAL", p: "https://commons.wikimedia.org/wiki/File:Berlin_Philharmonie_asv2018-05_img2.jpg" },
+  "theater-des-westens": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg/1280px-Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg/960px-Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg", c: "A.Savin", l: "CC BY-SA 3.0", p: "https://commons.wikimedia.org/wiki/File:Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg" },
+  "theater-renaissance": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Charlottenburg_Renaissance-Theater_2014-001.jpg/1280px-Charlottenburg_Renaissance-Theater_2014-001.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Charlottenburg_Renaissance-Theater_2014-001.jpg/960px-Charlottenburg_Renaissance-Theater_2014-001.jpg", c: "Fridolin freudenfett", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Charlottenburg_Renaissance-Theater_2014-001.jpg" },
+  "supermarkt-kadewe-feinkost": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/KaDeWe_Rolltreppe.jpg/1280px-KaDeWe_Rolltreppe.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/KaDeWe_Rolltreppe.jpg/960px-KaDeWe_Rolltreppe.jpg", c: "Fridolin freudenfett", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:KaDeWe_Rolltreppe.jpg" },
+  "mode-bikini-berlin": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Berlin%2C_Bikini.jpg/1280px-Berlin%2C_Bikini.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Berlin%2C_Bikini.jpg/960px-Berlin%2C_Bikini.jpg", c: "O.Gaudig", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin,_Bikini.jpg" },
+  "hotel-grand-hyatt": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/2023_Grand_Hyatt_Hotel_Berlin.jpg/1280px-2023_Grand_Hyatt_Hotel_Berlin.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/2023_Grand_Hyatt_Hotel_Berlin.jpg/960px-2023_Grand_Hyatt_Hotel_Berlin.jpg", c: "Bärwinkel,Klaus", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:2023_Grand_Hyatt_Hotel_Berlin.jpg" },
+  "museum-naturkunde": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg/1280px-Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg/960px-Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg", c: "Phyrexian", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg" },
+  "museum-altes": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/A-Trane_Berlin_Eingang.jpg/1280px-A-Trane_Berlin_Eingang.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/A-Trane_Berlin_Eingang.jpg/960px-A-Trane_Berlin_Eingang.jpg", c: "Gerd Fahrenhorst", l: "CC BY 4.0", p: "https://commons.wikimedia.org/wiki/File:A-Trane_Berlin_Eingang.jpg" },
   "aussicht-monkey-bar": { u: "https://upload.wikimedia.org/wikipedia/commons/5/51/Monkey_Bar%2C_the_rooftop_bar_at_25hours_Hotel_Bikini_Berlin.jpg", c: "Voyages etc", l: "CC BY 2.0", p: "https://commons.wikimedia.org/wiki/File:Monkey_Bar,_the_rooftop_bar_at_25hours_Hotel_Bikini_Berlin.jpg" },
-  "hotel-25hours-bikini": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/31/25hours%2C_Berlin_%28LRM_20210702_082109-RR-HDR%29.jpg/1280px-25hours%2C_Berlin_%28LRM_20210702_082109-RR-HDR%29.jpg", c: "Matti Blume", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:25hours,_Berlin_(LRM_20210702_082109-RR-HDR).jpg" },
+  "hotel-25hours-bikini": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/31/25hours%2C_Berlin_%28LRM_20210702_082109-RR-HDR%29.jpg/1280px-25hours%2C_Berlin_%28LRM_20210702_082109-RR-HDR%29.jpg", s: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/31/25hours%2C_Berlin_%28LRM_20210702_082109-RR-HDR%29.jpg/960px-25hours%2C_Berlin_%28LRM_20210702_082109-RR-HDR%29.jpg", c: "Matti Blume", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:25hours,_Berlin_(LRM_20210702_082109-RR-HDR).jpg" },
 };
 function commonsPhoto(p) { return (p && COMMONS_PHOTOS[p.id]) || null; }
 function commonsCredit(p) {
@@ -3435,7 +3495,7 @@ function localPhotoSrc(p) {
     return window.Capacitor && window.Capacitor.convertFileSrc ? window.Capacitor.convertFileSrc(eintrag.uri) : "";
   } catch (e) { return ""; }
 }
-async function cachePlacePhoto(p) {
+async function cachePlacePhoto(p, leise) {
   const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
   if (!FS || !p || !p.id) return;
   const da = photoCache()[p.id];
@@ -3466,7 +3526,7 @@ async function cachePlacePhoto(p) {
     const m = photoCache();
     m[p.id] = { uri: file.uri, real: !!p.photo, key: p.photo ? "" : ((commonsPhoto(p) || {}).u || "") };
     try { localStorage.setItem(PHOTO_CACHE_KEY, JSON.stringify(m)); } catch (e) {}
-    if (state.placeView === p.id || state.tab === "saved") render();
+    if (!leise && (state.placeView === p.id || state.tab === "saved")) render();
   } catch (e) { /* ohne Netz bleibt die Vorschau */ }
 }
 
@@ -5527,7 +5587,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.194";
+const APP_VERSION = "1.0.196";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
