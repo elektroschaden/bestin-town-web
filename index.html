@@ -1297,8 +1297,10 @@ const keyOfValue = v => (v >= 1 ? "joy" : v >= 0.5 ? "ok" : "no");
 
 // Städte. Orte ohne Stadt-Angabe gehören zu Berlin.
 const CITIES = [
-  { id: "berlin", name: "Berlin", search: "Berlin", country: "Deutschland" },
-  { id: "berlin-umland", name: "Berliner Umland", search: "Brandenburg", country: "Deutschland" },
+  { id: "berlin", name: "Berlin & Umland", search: "Berlin", country: "Deutschland" },
+  // Kein eigener Eintrag mehr: Berlin und sein Umland sind eine Sache. Der
+  // Datensatz bleibt für Altdaten auflösbar, erscheint aber nicht in der Auswahl.
+  { id: "berlin-umland", name: "Berlin & Umland", search: "Brandenburg", country: "Deutschland", hidden: true },
   { id: "freiburg", name: "Freiburg", search: "Freiburg im Breisgau", country: "Deutschland" },
   { id: "tuebingen", name: "Tübingen", search: "Tübingen", country: "Deutschland" },
   // Fest eingetragen (nicht aus places.cityName abgeleitet), damit der Name
@@ -1332,9 +1334,17 @@ document.addEventListener("change", e => {
 });
 
 function cityDatalist() { return `<datalist id="cityOptions">${CITIES.map(c => `<option value="${esc(c.id === "berlin" ? "Berlin" : c.name)}">`).join("")}</datalist>`; }
-const cityOf = p => (CITY[p.city] ? p.city : "berlin");
+const CITY_MERGE = { "berlin-umland": "berlin" };
+const rawCityOf = p => (CITY[p.city] ? p.city : "berlin");
+const cityOf = p => CITY_MERGE[rawCityOf(p)] || rawCityOf(p);
 const curCity = () => CITY[state.city] || CITY.berlin;
-function loadCity() { try { const c = localStorage.getItem("bit-city"); return c && /^[a-z0-9-]{1,200}$/.test(c) ? c : "berlin"; } catch (e) { return "berlin"; } }
+function loadCity() {
+  try {
+    const c = localStorage.getItem("bit-city");
+    const v = c && /^[a-z0-9-]{1,200}$/.test(c) ? c : "berlin";
+    return CITY_MERGE[v] || v;
+  } catch (e) { return "berlin"; }
+}
 function saveCity(c) { try { localStorage.setItem("bit-city", c); } catch (e) {} }
 // Ortswahl als Baum. state.whereOpen: Panel offen; state.whereCity: aufgeklappte Stadt im Baum.
 function cityShort(c) { return c.name.split(" & "); }
@@ -1356,13 +1366,13 @@ function renderWhere() {
     if (q.length >= 2) {
       html += whereHits(q);
     } else {
-      const countries = [...new Set(CITIES.map(x => x.country))];
+      const countries = [...new Set(CITIES.filter(x => !x.hidden).map(x => x.country))];
       const land = state.whereCountry || (CITIES.find(x => x.id === state.city) || {}).country || countries[0];
       if (countries.length > 1) {
         html += `<div class="wp-lands">${countries.map(k => `<button type="button" class="wp-land${k === land ? " on" : ""}" data-landpick="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
       }
       html += `<ul><li><button type="button" class="wp-item wp-near ${state.near ? "on" : ""}" data-near="1">In meiner Nähe</button></li>` +
-        CITIES.filter(ct => ct.country === land).map(ct => cityItem(ct, state.whereCity)).join("") + `</ul>`;
+        CITIES.filter(ct => ct.country === land && !ct.hidden).map(ct => cityItem(ct, state.whereCity)).join("") + `</ul>`;
     }
     html += `</div>`;
   }
@@ -2619,7 +2629,7 @@ function groupTiles() {
 // Stadt selbst — dann entfällt die Gebietsebene und man landet direkt bei den
 // Orten. Ein Ort ohne Gebiet in einer gegliederten Stadt bekommt die Stadt
 // als Gebiet, damit er nicht unsichtbar wird.
-const SUBDIVIDED = new Set(["berlin", "berlin-umland"]);
+const SUBDIVIDED = new Set(["berlin"]);
 function areaNameOf(p) {
   const city = cityOf(p);
   if (!SUBDIVIDED.has(city)) return (CITY[city] || {}).name || city;
@@ -2628,8 +2638,10 @@ function areaNameOf(p) {
 // Wo das Gebiet außerhalb der Stadt liegt, steht das Land dabei: Erkner liegt
 // in Brandenburg, nicht in Berlin.
 function regionOf(kiez) {
-  if (state.city !== "berlin-umland") return "";
-  return kiez && kiez !== (CITY["berlin-umland"] || {}).name ? "Brandenburg" : "";
+  // Ein Gebiet außerhalb der Stadt: dort steht das Land dabei. Erkannt wird es
+  // an der Herkunft der Orte (früher eigene Stadt „berlin-umland").
+  const p = state.places.find(x => cityOf(x) === state.city && areaNameOf(x) === kiez);
+  return p && rawCityOf(p) === "berlin-umland" ? "Brandenburg" : "";
 }
 function discoverAreas() {
   const map = new Map();
@@ -4472,8 +4484,19 @@ function patronCities(x) {
   const city = String(x.city || "").trim();
   return city ? [{ city, kieze: cleanKieze(kiezeOf(x)) }] : [];
 }
-function patronEntry(x, city) { return patronCities(x).find(e => e.city === city) || null; }
-function kiezeFor(x, city) { const e = patronEntry(x, city); return e ? e.kieze : []; }
+function patronEntry(x, city) {
+  const list = patronCities(x);
+  return list.find(e => e.city === city)
+    || list.find(e => CITY_MERGE[e.city] === city)
+    || list.find(e => CITY_MERGE[city] === e.city)
+    || null;
+}
+function kiezeFor(x, city) {
+  const list = entriesFor(x, city);
+  const set = new Set();
+  list.forEach(e => e.kieze.forEach(k => set.add(k)));
+  return [...set];
+}
 // Berlin spricht von Kiezen, alle anderen Städte von Stadtteilen. Ein Ort für
 // alle Formen, damit keine Mischung entsteht.
 const AREA = { one: "Ort", many: "Orte", dat: "Orten", pate: "Orts-Pate", name: "Ortsname", list: "Ortsliste" };
@@ -4491,8 +4514,18 @@ function pateRole(x, city, kiez) {
   const shown = kiez && e.kieze.includes(kiez) ? kiez : kiezText(e.kieze);
   return `${areaWord(city).pate} · ${shown} · ${cityLabel(city)}`;
 }
-function stadtPate(city) { return state.paten.find(x => { const e = patronEntry(x, city); return !!e && !e.kieze.length; }) || null; }
-function kiezPate(city, kiez) { return kiez ? state.paten.find(x => kiezeFor(x, city).includes(kiez)) || null : null; }
+// Berlin und Umland sind eine Stadt: ein Pate des Umlands gilt auch für Berlin.
+const sameCity = (a, b) => a === b || CITY_MERGE[a] === b || CITY_MERGE[b] === a || CITY_MERGE[a] === CITY_MERGE[b];
+function entriesFor(x, city) { return patronCities(x).filter(e => sameCity(e.city, city)); }
+function stadtPate(city) {
+  for (const x of state.paten) if (entriesFor(x, city).some(e => !e.kieze.length)) return x;
+  return null;
+}
+function kiezPate(city, kiez) {
+  if (!kiez) return null;
+  for (const x of state.paten) if (entriesFor(x, city).some(e => e.kieze.includes(kiez))) return x;
+  return null;
+}
 // Wer tritt auf? Stadtteil-Pate, sonst Stadt-Pate, sonst (in der Stadtansicht) ein Kiez-Pate der Stadt.
 function pateFor(city, kiez) { return kiezPate(city, kiez) || stadtPate(city) || (!kiez ? kiezPaten(city)[0] || null : null); }
 function kiezPaten(city) { return state.paten.filter(x => kiezeFor(x, city).length); }
@@ -4943,7 +4976,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.179";
+const APP_VERSION = "1.0.180";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
