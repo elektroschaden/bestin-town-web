@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Best in Town · Lokal</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <!-- Auf dem Homescreen: eigenes Icon, kein Browser-Rahmen, Farbe der App -->
@@ -1045,7 +1045,7 @@ body.boot-reveal .ranking > li { animation: none !important; }
   color: var(--muted); cursor:pointer; }
 .tab.on { color: var(--ink); font-weight:700; }
 .tab svg { width:20px; height:20px; }
-body { padding-bottom: 76px; }
+body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px); }
 
 /* ---------- Meine Orte ---------- */
 .sv-h { font-family: var(--font-display); font-size:1.875rem; line-height:1.06; font-weight:400; margin:14px 0 0; }
@@ -1061,6 +1061,7 @@ body { padding-bottom: 76px; }
 .sv-share { min-height:48px; border:0; border-radius:12px; background: var(--black); color:#F6F1E7;
   font:inherit; font-size:0.875rem; font-weight:600; cursor:pointer; }
 .sv-empty { margin-top:18px; font-size:0.8125rem; color: var(--muted); line-height:1.5; }
+.pv-credit { margin:8px 0 0; font-size:0.625rem; color:#8C8879; letter-spacing:.02em; }
 </style>
   </div>
 </div>
@@ -2261,6 +2262,7 @@ document.addEventListener("click", e => {
     state.saved = list;
     try { localStorage.setItem("bit-saved", JSON.stringify(list)); } catch (err) {}
     render();
+    if (i < 0) { const gemerkt = state.places.find(x => x.id === id); if (gemerkt) cachePlacePhoto(gemerkt); }
     return;
   }
 });
@@ -2827,6 +2829,7 @@ function renderPlaceView(id) {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4.6"/><path d="M11 5.6L4.6 12 11 18.4"/></svg>
       <span>${esc(kiez)}</span></button>
     ${foto}
+    ${commonsCredit(p) ? `<p class="pv-credit">Foto: ${esc(commonsCredit(p))} · Wikimedia Commons</p>` : ""}
     <p class="pv-kat">${esc(kat)}</p>
     <h1 class="pv-name">${esc(p.name)}</h1>
     ${say ? `<p class="pv-say">${esc(say)}</p>` : ""}
@@ -2874,10 +2877,20 @@ function loadImage(src) {
   return new Promise(res => {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => res(img);
+    img.onload = async () => {
+      // Android malt ohne fertigen Decoder schwarz — aber decode() kann bei
+      // Fremdbildern ewig hängen. Deshalb mit Zeitgrenze, nicht blind warten.
+      try {
+        await Promise.race([
+          img.decode ? img.decode() : Promise.resolve(),
+          new Promise(r => setTimeout(r, 900))
+        ]);
+      } catch (e) {}
+      res(img);
+    };
     img.onerror = () => res(null);
     img.src = src;
-    setTimeout(() => res(null), 6000);
+    setTimeout(() => res(null), 12000);
   });
 }
 function coverDraw(g, img, x, y, w, h, fx = 50, fy = 40) {
@@ -2898,6 +2911,63 @@ function roundRect(g, x, y, w, h, r) {
   g.arcTo(x, y, x + w, y, r);
   g.closePath();
 }
+
+// Der Stempel wird gezeichnet, nicht als Bild geladen: so ist er immer scharf
+// und braucht keine Schriften aus dem Netz.
+function drawStamp(g, cx, cy, r) {
+  const k = r / 150;
+  g.save();
+  g.translate(cx - 150 * k, cy - 150 * k);
+  g.scale(k, k);
+  g.strokeStyle = "#1C1A16";
+  g.lineWidth = 5;   g.beginPath(); g.arc(150, 150, 140, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 1.5; g.beginPath(); g.arc(150, 150, 131, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 3;   g.beginPath(); g.arc(150, 150, 90, 0, Math.PI * 2); g.stroke();
+
+  const arcText = (text, radius, mitte, umgedreht, groesse) => {
+    g.font = `900 ${groesse}px Inter, system-ui, sans-serif`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillStyle = "#1C1A16";
+    const zeichen = [...text];
+    const breiten = zeichen.map(ch => g.measureText(ch).width + 4);
+    const gesamt = breiten.reduce((a, b) => a + b, 0);
+    const richtung = umgedreht ? -1 : 1;
+    let a = mitte - (gesamt / radius) / 2 * richtung;
+    zeichen.forEach((ch, i) => {
+      const da = breiten[i] / radius;
+      const mitteZeichen = a + (da / 2) * richtung;
+      g.save();
+      g.translate(150 + Math.cos(mitteZeichen) * radius, 150 + Math.sin(mitteZeichen) * radius);
+      g.rotate(mitteZeichen + (umgedreht ? -Math.PI / 2 : Math.PI / 2));
+      g.fillText(ch, 0, 0);
+      g.restore();
+      a += da * richtung;
+    });
+  };
+  arcText("BEST IN", 100, -Math.PI / 2, false, 38);
+  arcText("BEST IN", 128, Math.PI / 2, true, 38);
+
+  g.fillStyle = "#1C1A16";
+  g.beginPath();
+  if (g.roundRect) g.roundRect(2, 106, 296, 88, 12); else g.rect(2, 106, 296, 88);
+  g.fill();
+  g.strokeStyle = "#F6F1E7"; g.lineWidth = 1.5;
+  g.beginPath();
+  if (g.roundRect) g.roundRect(9, 113, 282, 74, 7); else g.rect(9, 113, 282, 74);
+  g.stroke();
+  g.fillStyle = "#F6F1E7";
+  g.font = '900 64px Inter, system-ui, sans-serif';
+  g.textAlign = "center"; g.textBaseline = "middle";
+  const town = "TOWN";
+  const breiten = [...town].map(ch => g.measureText(ch).width);
+  const summe = breiten.reduce((a, b) => a + b, 0);
+  const abstand = (210 - summe) / (town.length - 1);
+  let x = 150 - 105 + breiten[0] / 2;
+  [...town].forEach((ch, i) => { g.fillText(ch, x, 146); x += breiten[i] / 2 + abstand + (breiten[i + 1] || 0) / 2; });
+  g.restore();
+}
+
 async function buildCollage(withPhotos) {
   resetPhotoUse();
   const list = savedPlaces();
@@ -2912,7 +2982,7 @@ async function buildCollage(withPhotos) {
 
   g.fillStyle = "#15261F";
   g.font = '400 64px "Instrument Serif", Georgia, serif';
-  g.fillText("Meine Orte", 72, 128);
+  g.fillText("Meine Lieblingsorte", 72, 128);
   g.fillStyle = "#6A675C";
   g.font = '500 24px Inter, system-ui, sans-serif';
   const gebiete = [...new Set(list.map(areaNameOf))];
@@ -2921,7 +2991,7 @@ async function buildCollage(withPhotos) {
   const n = list.length;
   const cols = n <= 1 ? 1 : (n <= 4 ? 2 : 3);
   const rows = Math.ceil(n / cols);
-  const top = 220, bottom = 1210, gap = 20, pad = 72;
+  const top = 300, bottom = 1266, gap = 20, pad = 72;
   const gridW = COLLAGE_W - pad * 2, gridH = bottom - top;
   const cellW = (gridW - gap * (cols - 1)) / cols;
 
@@ -2973,12 +3043,30 @@ async function buildCollage(withPhotos) {
     }
   });
 
-  g.strokeStyle = "#E4DCCB"; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(72, 1272); g.lineTo(COLLAGE_W - 72, 1272); g.stroke();
-  g.fillStyle = "#6A675C";
-  g.font = '700 22px Inter, system-ui, sans-serif';
-  g.fillText("BEST IN TOWN", 72, 1312);
-  return new Promise(res => c.toBlob(res, "image/png"));
+  // Lizenz: Fotos aus Commons verlangen die Nennung — klein, am unteren Rand.
+  const quellen = [...new Set(list.map(pl => commonsPhoto(pl)).filter(Boolean).map(c => (c.c ? c.c + " (" + c.l + ")" : c.l)))];
+  if (withPhotos && quellen.length) {
+    g.fillStyle = "#8C8879";
+    g.font = '400 14px Inter, system-ui, sans-serif';
+    g.textAlign = "left";
+    // Lizenz: jede Quelle wird genannt, kein "u. a." — zwei Zeilen reichen.
+    const worte = ("Fotos: " + quellen.join(" · ") + " · Wikimedia Commons").split(" ");
+    const zeilen = [];
+    let zeile = "";
+    for (const w of worte) {
+      const test = zeile ? zeile + " " + w : w;
+      if (g.measureText(test).width > COLLAGE_W - pad * 2 && zeile) { zeilen.push(zeile); zeile = w; }
+      else zeile = test;
+    }
+    if (zeile) zeilen.push(zeile);
+    const sichtbar = zeilen.slice(0, 2);
+    if (zeilen.length > 2) sichtbar[1] = sichtbar[1].replace(/[^ ]*$/, "") + "…";
+    sichtbar.forEach((z, i) => g.fillText(z, pad, COLLAGE_H - 44 + i * 18));
+  }
+  drawStamp(g, COLLAGE_W - pad - 105, 72 + 105, 105);
+  // JPEG statt PNG: kein Alphakanal (das war der Schwarz-Fehler auf Android),
+  // deutlich kleiner und schneller.
+  return new Promise(res => c.toBlob(res, "image/jpeg", 0.92));
 }
 async function shareCollage() {
   if (!savedPlaces().length) return;
@@ -2990,14 +3078,14 @@ async function shareCollage() {
   if (!blob) { toast("Collage hat nicht geklappt."); return; }
   if (window.BestMobile && window.BestMobile.shareImage) {
     try {
-      await window.BestMobile.shareImage({ filename: "best-in-town-collage.png", data: blob, title: "Meine Orte", text: "Meine Lieblingsorte in Best in Town" });
+      await window.BestMobile.shareImage({ filename: "best-in-town-collage.jpg", data: blob, title: "Meine Orte", text: "Meine Lieblingsorte in Best in Town" });
       return;
     } catch (e) { /* Fallback unten */ }
   }
   try {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "best-in-town-collage.png";
+    a.download = "best-in-town-collage.jpg";
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     toast("Collage gespeichert.");
@@ -3015,6 +3103,14 @@ function tabsHtml() {
   </nav>`;
 }
 
+// Die Reiterleiste ist so hoch, wie sie wirklich ist (Systemschrift kann sie
+// vergroessern). Der Inhalt bekommt genau diesen Platz plus Geraete-Rand.
+function messeTabbar(view) {
+  const tb = view.querySelector(".tabbar");
+  if (!tb) return;
+  const h = Math.round(tb.getBoundingClientRect().height);
+  if (h) document.documentElement.style.setProperty("--tabbar-h", h + "px");
+}
 function renderHome() {
   resetPhotoUse();
   const filled = Object.keys(CATS).filter(id => placesOf(id).length).length;
@@ -3120,6 +3216,7 @@ function renderHome() {
   if (view._bitHtml === html) return;
   view._bitHtml = html;
   view.innerHTML = `<div class="wrap" style="gap:24px">${html}</div>`;
+  messeTabbar(view);
   // Das Paten-Formular bleibt dasselbe Element (wie beim Ort) – sonst ginge ein gewähltes Foto beim Neuzeichnen verloren.
   const newPate = $("pateForm");
   let newCitiesHTML = null;
@@ -3286,7 +3383,109 @@ function previewPhoto(p) {
   return `https://images.unsplash.com/photo-${best}?w=1200&q=75&auto=format&fit=crop`;
 }
 // Ein Bild für einen Ort: echtes Foto, sonst Vorschau, sonst nichts.
-function photoSrcOf(p) { return p && p.photo ? photoURL(p.photo) : (p ? previewPhoto(p) : ""); }
+
+// ---------- Fotos der echten Orte (Wikimedia Commons) ----------
+// Frei lizenziert, aber mit Namensnennung. Diese Bilder zeigen den Ort selbst,
+// nicht nur die Stimmung. Sobald ein eigenes Foto am Ort hängt, gewinnt das.
+// Quelle und Lizenz stehen im Bild selbst und in der Ortsansicht.
+const COMMONS_PHOTOS = {
+  "club-berghain": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Berghain_Berlin_Facade_Detail.jpg/1280px-Berghain_Berlin_Facade_Detail.jpg", c: "Ben Kaden", l: "CC BY 2.0", p: "https://commons.wikimedia.org/wiki/File:Berghain_Berlin_Facade_Detail.jpg" },
+  "club-kater": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Kater_Blau_Berlin.JPG/1280px-Kater_Blau_Berlin.JPG", c: "Dirk Ingo Franke", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Kater_Blau_Berlin.JPG" },
+  "club-tresor": { u: "https://upload.wikimedia.org/wikipedia/commons/6/64/Tresor_Berlin_2008_Facade.jpg", c: "Boca Dorada", l: "CC BY-SA 2.0", p: "https://commons.wikimedia.org/wiki/File:Tresor_Berlin_2012.jpg" },
+  "club-ritter-butzke": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg/1280px-Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg", c: "Zeitfixierer", l: "CC BY-SA 2.0", p: "https://commons.wikimedia.org/wiki/File:Ritter_Butzke_Nightclub_Berlin_DJ_Booth.jpg" },
+  "theater-deutsches-theater": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Deutsches_Theater_Berlin_2024-05-09_01.jpg/1280px-Deutsches_Theater_Berlin_2024-05-09_01.jpg", c: "Leonhard Lenz", l: "CC0", p: "https://commons.wikimedia.org/wiki/File:Deutsches_Theater_Berlin_2024-05-09_01.jpg" },
+  "theater-staatsoper": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/Berlin_-_Staatsoper_Unter_den_Linden.jpg/1280px-Berlin_-_Staatsoper_Unter_den_Linden.jpg", c: "Marek Śliwecki", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin_-_Staatsoper_Unter_den_Linden.jpg" },
+  "theater-philharmonie": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Berlin_Philharmonie_asv2018-05_img2.jpg/1280px-Berlin_Philharmonie_asv2018-05_img2.jpg", c: "A.Savin", l: "FAL", p: "https://commons.wikimedia.org/wiki/File:Berlin_Philharmonie_asv2018-05_img2.jpg" },
+  "theater-des-westens": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg/1280px-Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg", c: "A.Savin", l: "CC BY-SA 3.0", p: "https://commons.wikimedia.org/wiki/File:Berlin-Charlottenburg_Theater_des_Westens_05-2014.jpg" },
+  "theater-renaissance": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Charlottenburg_Renaissance-Theater_2014-001.jpg/1280px-Charlottenburg_Renaissance-Theater_2014-001.jpg", c: "Fridolin freudenfett", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Charlottenburg_Renaissance-Theater_2014-001.jpg" },
+  "supermarkt-kadewe-feinkost": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/KaDeWe_Rolltreppe.jpg/1280px-KaDeWe_Rolltreppe.jpg", c: "Fridolin freudenfett", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:KaDeWe_Rolltreppe.jpg" },
+  "mode-bikini-berlin": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Berlin%2C_Bikini.jpg/1280px-Berlin%2C_Bikini.jpg", c: "O.Gaudig", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin,_Bikini.jpg" },
+  "hotel-grand-hyatt": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/2023_Grand_Hyatt_Hotel_Berlin.jpg/1280px-2023_Grand_Hyatt_Hotel_Berlin.jpg", c: "Bärwinkel,Klaus", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:2023_Grand_Hyatt_Hotel_Berlin.jpg" },
+  "museum-naturkunde": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg/1280px-Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg", c: "Phyrexian", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:Berlin_-_Museum_f%C3%BCr_Naturkunde_6731.jpg" },
+  "museum-altes": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/A-Trane_Berlin_Eingang.jpg/1280px-A-Trane_Berlin_Eingang.jpg", c: "Gerd Fahrenhorst", l: "CC BY 4.0", p: "https://commons.wikimedia.org/wiki/File:A-Trane_Berlin_Eingang.jpg" },
+  "aussicht-monkey-bar": { u: "https://upload.wikimedia.org/wikipedia/commons/5/51/Monkey_Bar%2C_the_rooftop_bar_at_25hours_Hotel_Bikini_Berlin.jpg", c: "Voyages etc", l: "CC BY 2.0", p: "https://commons.wikimedia.org/wiki/File:Monkey_Bar,_the_rooftop_bar_at_25hours_Hotel_Bikini_Berlin.jpg" },
+  "hotel-25hours-bikini": { u: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/31/25hours%2C_Berlin_%28LRM_20210702_082109-RR-HDR%29.jpg/1280px-25hours%2C_Berlin_%28LRM_20210702_082109-RR-HDR%29.jpg", c: "Matti Blume", l: "CC BY-SA 4.0", p: "https://commons.wikimedia.org/wiki/File:25hours,_Berlin_(LRM_20210702_082109-RR-HDR).jpg" },
+};
+function commonsPhoto(p) { return (p && COMMONS_PHOTOS[p.id]) || null; }
+function commonsCredit(p) {
+  const c = commonsPhoto(p);
+  if (!c) return "";
+  const teile = [];
+  if (c.c) teile.push(c.c);
+  if (c.l) teile.push(c.l);
+  return teile.join(" · ");
+}
+
+// ---------- Fotos auf dem Geraet ----------
+// Beim Merken wird das Bild einmal geladen, auf 900 px gebracht und abgelegt.
+// Danach liest die App die Datei vom Geraet: sofort da, offline, ohne Netz.
+const PHOTO_CACHE_KEY = "bit-fotos";
+function photoCache() {
+  try { const v = JSON.parse(localStorage.getItem(PHOTO_CACHE_KEY) || "{}"); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; }
+}
+function localPhotoSrc(p) {
+  const eintrag = p && photoCache()[p.id];
+  if (!eintrag || !eintrag.uri) return "";
+  if (p.photo && !eintrag.real) return "";     // inzwischen gibt es ein echtes Foto
+  if (eintrag.key && p && !p.photo) {
+    const c = commonsPhoto(p);
+    if (eintrag.key !== (c ? c.u : "")) return "";   // Quelle hat gewechselt
+  }
+  try {
+    return window.Capacitor && window.Capacitor.convertFileSrc ? window.Capacitor.convertFileSrc(eintrag.uri) : "";
+  } catch (e) { return ""; }
+}
+async function cachePlacePhoto(p) {
+  const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+  if (!FS || !p || !p.id) return;
+  const da = photoCache()[p.id];
+  if (da && da.uri && (da.real === !!p.photo)) return;
+  const src = remotePhotoSrc(p);
+  if (!src) return;
+  try {
+    const res = await fetch(src, { mode: "cors" });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    let out = blob;
+    try {
+      const bmp = await createImageBitmap(blob);
+      const max = 900, k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(bmp.width * k));
+      c.height = Math.max(1, Math.round(bmp.height * k));
+      c.getContext("2d", { willReadFrequently: true }).drawImage(bmp, 0, 0, c.width, c.height);
+      const jpeg = await new Promise(r => c.toBlob(r, "image/jpeg", 0.82));
+      if (jpeg) out = jpeg;
+    } catch (e) { /* das Original ist auch recht */ }
+    const buf = await out.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode(...bytes.subarray(i, i + 32768));
+    const name = String(p.id).replace(/[^a-zA-Z0-9_.-]/g, "_");
+    const file = await FS.writeFile({ path: "fotos/" + name + ".jpg", directory: "DATA", data: btoa(bin), recursive: true });
+    const m = photoCache();
+    m[p.id] = { uri: file.uri, real: !!p.photo, key: p.photo ? "" : ((commonsPhoto(p) || {}).u || "") };
+    try { localStorage.setItem(PHOTO_CACHE_KEY, JSON.stringify(m)); } catch (e) {}
+    if (state.placeView === p.id || state.tab === "saved") render();
+  } catch (e) { /* ohne Netz bleibt die Vorschau */ }
+}
+
+function remotePhotoSrc(p) {
+  if (p && p.photo) return photoURL(p.photo);
+  const c = commonsPhoto(p);
+  if (c) return c.u;
+  return previewPhoto(p);
+}
+function photoSrcOf(p) {
+  if (!p) return "";
+  const c = commonsPhoto(p);
+  const lok = localPhotoSrc(p);
+  // Ein echtes Foto schlägt alles; sonst gilt die abgelegte Kopie, solange sie
+  // zu der Quelle passt, die jetzt gelten würde.
+  if (p.photo) return localPhotoSrc(p) || p.photo;
+  if (lok) return lok;
+  return remotePhotoSrc(p);
+}
 
 function avatarURL(id) { return avatarStore()[id] || photoURL(id); }
 function avatarRemember(id, dataUrl) {
@@ -3923,6 +4122,7 @@ function renderCategory(cat) {
   if (view._bitHtml === html) return;
   view._bitHtml = html;
   view.innerHTML = `<div class="wrap" style="gap:20px">${html}</div>`;
+  messeTabbar(view);
   const slot = $("formSlot");
   if (slot) { if (keepForm) slot.replaceWith(keepForm); else slot.replaceWith(buildForm(cat)); }
   const sslot = $("suggestSlot");
@@ -5327,7 +5527,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.192";
+const APP_VERSION = "1.0.194";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
