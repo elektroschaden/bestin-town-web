@@ -987,6 +987,14 @@ body.boot-reveal .ranking > li { animation: none !important; }
   color: var(--muted); white-space:nowrap; cursor:pointer; }
 .area-filter button.on { color: var(--ink); font-weight:600; box-shadow: inset 0 -2px 0 var(--ink); }
 .area-list { margin-top:8px; }
+/* Eine feine Linie, darunter die Rubrik — und die Einträge folgen ohne zweite
+   Linie direkt darunter. Die Rubrik steht dadurch einmal, nicht an jedem Ort. */
+.area-grouphead { display:flex; align-items:center; gap:7px; margin:0; padding:12px 0 10px;
+  border-top:1px solid var(--line); color: var(--muted); }
+.area-group:first-child .area-grouphead { border-top:0; padding-top:2px; }
+.area-grouphead + .area-item { border-top:0; }
+.area-grouphead .k-ico { width:15px; height:15px; stroke-width:1; opacity:.8; }
+.area-grouphead span { font-size:0.625rem; letter-spacing:.16em; text-transform:uppercase; }
 .area-item { display:block; width:100%; padding:0 0 22px; border:0; background:none; font:inherit;
   color:inherit; text-align:left; cursor:pointer; border-top:1px solid var(--line); }
 .area-item:first-child { border-top:0; }
@@ -2631,16 +2639,30 @@ function areaBodyHtml(kiez) {
         <button type="button" class="${filter ? "" : "on"}" data-area-cat="">Alle</button>
         ${present.map(a => `<button type="button" class="${filter === a.id ? "on" : ""}" data-area-cat="${a.id}">${esc(a.name)}</button>`).join("")}
       </div>` : "";
-  const rows = shown.map(p => {
+  // Immer nach Rubrik, innerhalb der Rubrik alphabetisch. Die Rubrik steht als
+  // leise Zeile über ihrer Gruppe — so ist die Reihenfolge sichtbar und muss
+  // nicht an jedem Eintrag wiederholt werden.
+  const byName = (a, b) => String(a.name || "").localeCompare(String(b.name || ""), "de");
+  // Gruppiert wird nach Bereich in der festen Ordnung der App
+  // (Essen & Trinken · Kultur · Ausgehen · Shopping · Übernachten),
+  // innerhalb des Bereichs alphabetisch.
+  const areaIdOf = p => { const c = CATS[mapCat(p.category)]; return c && c.area ? c.area.id : ""; };
+  const groups = AREAS
+    .map(a => ({ id: a.id, name: a.name, list: shown.filter(p => areaIdOf(p) === a.id).sort(byName) }))
+    .filter(g => g.list.length);
+  const item = p => {
     const line = cleanText(p.reason || "");
-    const kat = `<span class="ai-kat">${CAT_ICON[mapCat(p.category)] || ""}<em>${esc((CATS[mapCat(p.category)] || {}).name || "")}</em></span>`;
     return `<button type="button" class="area-item${p.photo ? "" : " ohne-foto"}" data-open-place="${esc(p.id)}">
-      ${p.photo ? `<span class="ai-photo"><img src="${photoURL(p.photo)}" alt="" loading="lazy" draggable="false"></span>` : kat}
+      ${p.photo ? `<span class="ai-photo"><img src="${photoURL(p.photo)}" alt="" loading="lazy" draggable="false"></span>` : ""}
       <span class="ai-name">${esc(p.name)}</span>
       ${line ? `<span class="ai-line">${esc(line)}</span>` : ""}
     </button>`;
-  }).join("");
-  return `${chips}<div class="area-list">${rows || `<p class="area-sub area-empty">Hier ist noch nichts eingetragen.</p>`}</div>`;
+  };
+  const body = groups.map(g => `<section class="area-group">
+      <p class="area-grouphead"><span>${esc(g.name)}</span></p>
+      ${g.list.map(item).join("")}
+    </section>`).join("");
+  return `${chips}<div class="area-list">${body || `<p class="area-sub area-empty">Hier ist noch nichts eingetragen.</p>`}</div>`;
 }
 // Kopf eines Gebiets: Land (nur außerhalb der Stadt), Name, Zahl und Herkunft.
 function areaHeadHtml(kiez, withBack) {
@@ -4951,7 +4973,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.184";
+const APP_VERSION = "1.0.185";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
