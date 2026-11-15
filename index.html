@@ -991,8 +991,13 @@ body.boot-reveal .ranking > li { animation: none !important; }
 .ai-photo { display:block; width:100%; aspect-ratio:4/3; border-radius:12px; overflow:hidden;
   background: var(--sign-soft); margin:16px 0 0; }
 .ai-photo img { width:100%; height:100%; object-fit:cover; display:block; }
-.area-back { display:inline-block; margin:16px 0 0; padding:0; border:0; background:none; font:inherit;
-  font-size:0.6875rem; letter-spacing:.14em; text-transform:uppercase; color: var(--muted); cursor:pointer; }
+/* Ein Zurück-Griff für alle Ansichten: 44px Tippfläche, klarer Pfeil,
+   Beschriftung dahinter. Nicht zu übersehen, ohne laut zu werden. */
+.back-btn { display:inline-flex; align-items:center; gap:10px; min-height:44px; margin:6px 0 0 -4px;
+  padding:0 4px; border:0; border-radius:10px; background:none; font:inherit;
+  font-size:0.875rem; font-weight:500; color: var(--ink); cursor:pointer; }
+.back-btn svg { width:24px; height:24px; flex:none; }
+.back-btn:active { background: var(--sign-soft); }
 .area-item.ohne-foto { padding-top:14px; }
 .ai-kat { display:inline-flex; align-items:center; gap:6px; color: var(--muted); margin-top:0; }
 .ai-kat .k-ico { width:15px; height:15px; stroke-width:1; opacity:.8; }
@@ -2679,7 +2684,9 @@ function renderArea() {
       ${line ? `<span class="ai-line">${esc(line)}</span>` : ""}
     </button>`;
   }).join("");
-  return `<button type="button" class="area-back" data-area-back>‹ ${esc(stadt)}</button>
+  return `<button type="button" class="back-btn" data-area-back aria-label="Zurück zu ${esc(stadt)}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4.6"/><path d="M11 5.6L4.6 12 11 18.4"/></svg>
+      <span>${esc(stadt)}</span></button>
     <h1 class="area-h">${esc(kiez)}</h1>
     <p class="area-sub">${n} ${n === 1 ? "Lieblingsort" : "Lieblingsorte"}${pat ? " · Ausgewählt von " + esc(pat.name) : ""}</p>
     ${chips}
@@ -4907,7 +4914,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.177";
+const APP_VERSION = "1.0.178";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
@@ -5198,7 +5205,14 @@ window.addEventListener("scroll", () => { if (!currentCat()) state.homeScroll = 
 $("where").addEventListener("click", e => {
   e.stopPropagation();
   const btn = e.target.closest("button"); if (!btn) return;
-  if (btn.id === "whereBtn") { state.whereOpen = !state.whereOpen; state.whereCity = null; renderWhere(); return; }
+  if (btn.id === "whereBtn") {
+    state.whereOpen = !state.whereOpen;
+    // Aufgeklappt steht die eigene Stadt offen da: von hier ist das nächste
+    // Gebiet ein Griff, ohne erst die Stadt zu suchen.
+    state.whereCity = state.whereOpen ? state.city : null;
+    renderWhere();
+    return;
+  }
   if (btn.dataset.expand) {
     const id = btn.dataset.expand;
     state.whereCity = state.whereCity === id ? null : id; renderWhere(); return;
