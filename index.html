@@ -2664,12 +2664,18 @@ function renderDiscover() {
   // Kleine Stadt ohne Unterteilung: keine Zwischenebene — der Einstieg führt
   // direkt zu den Orten, das Gebiet ist die Stadt selbst.
   if (!SUBDIVIDED.has(state.city)) {
+    // Dieselbe Überschrift wie überall: „Unsere Lieblingsorte". Die Stadt steht
+    // oben in der Kopfzeile, nicht als Titel.
     if (!total) {
-      return `<h1 class="disc-h">${esc(stadt)}</h1>
+      return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
         <div class="disc-empty"><h3>Noch keine Lieblingsorte</h3>
         <p>${state.canEdit ? "Trag den ersten Ort ein." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
     }
-    return `${areaHeadHtml(stadt, false)}${areaBodyHtml(stadt)}`;
+    const pat = pateFor(state.city, stadt);
+    const sub = `${total} ${total === 1 ? "Ort" : "Orte"}${pat ? " · Ausgewählt von " + esc(pat.name) : ""}`;
+    return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
+      <p class="disc-sub"><span class="disc-count">${sub}</span></p>
+      ${areaBodyHtml(stadt)}`;
   }
   if (!total) {
     return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
@@ -4946,7 +4952,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.182";
+const APP_VERSION = "1.0.183";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
