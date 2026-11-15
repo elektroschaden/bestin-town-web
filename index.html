@@ -995,9 +995,10 @@ body.boot-reveal .ranking > li { animation: none !important; }
 .area-grouphead + .area-item { border-top:0; }
 .area-grouphead .k-ico { width:15px; height:15px; stroke-width:1; opacity:.8; }
 .area-grouphead span { font-size:0.625rem; letter-spacing:.16em; text-transform:uppercase; }
-.area-item { display:block; width:100%; padding:0 0 22px; border:0; background:none; font:inherit;
-  color:inherit; text-align:left; cursor:pointer; border-top:1px solid var(--line); }
-.area-item:first-child { border-top:0; }
+/* Nur die Rubrik trägt eine Linie. Zwischen den Orten stehen keine Striche —
+   der Abstand trennt, die Linie gliedert. */
+.area-item { display:block; width:100%; padding:0 0 18px; border:0; background:none; font:inherit;
+  color:inherit; text-align:left; cursor:pointer; }
 .ai-photo { display:block; width:100%; aspect-ratio:4/3; border-radius:12px; overflow:hidden;
   background: var(--sign-soft); margin:16px 0 0; }
 .ai-photo img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -2634,11 +2635,9 @@ function areaBodyHtml(kiez) {
   const filter = state.areaFilter || "";
   const shown = (filter ? all.filter(p => areaOf(p) === filter) : all.slice())
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "de"));
-  const chips = present.length > 1
-    ? `<div class="area-filter" role="tablist">
-        <button type="button" class="${filter ? "" : "on"}" data-area-cat="">Alle</button>
-        ${present.map(a => `<button type="button" class="${filter === a.id ? "on" : ""}" data-area-cat="${a.id}">${esc(a.name)}</button>`).join("")}
-      </div>` : "";
+  // Keine Filterzeile: Die Bereichszeilen sind die Ordnung, und bei höchstens
+  // zwölf Orten je Gebiet braucht niemand einen Filter.
+  const chips = "";
   // Immer nach Rubrik, innerhalb der Rubrik alphabetisch. Die Rubrik steht als
   // leise Zeile über ihrer Gruppe — so ist die Reihenfolge sichtbar und muss
   // nicht an jedem Eintrag wiederholt werden.
@@ -3894,8 +3893,19 @@ function setupAddressGate(f, catId) {
 
 function showFormError(msg) { const e = $("f-error"); if (e) { e.textContent = msg; e.hidden = !msg; } }
 
+const AREA_CAP = 12;   // höchstens zwölf Lieblingsorte je Gebiet
 async function savePlace(cat) {
   if (state.busy) return;
+  // Deckel: Ein Gebiet nimmt höchstens zwölf Orte. Bearbeiten ist immer erlaubt,
+  // nur das Hinzufügen eines dreizehnten wird abgewiesen.
+  if (!state.form || !state.form.id) {
+    const ziel = ($("f-kiez") ? $("f-kiez").value.trim() : "") || areaNameOf({ city: state.city, kiez: "" });
+    const zahl = state.places.filter(p => cityOf(p) === state.city && areaNameOf(p) === ziel && CATS[mapCat(p.category)]).length;
+    if (zahl >= AREA_CAP) {
+      showFormError(`${ziel} ist voll: ${AREA_CAP} Lieblingsorte sind das Maximum. Nimm einen anderen Ort auf oder verschiebe einen Eintrag in ein anderes Gebiet.`);
+      return;
+    }
+  }
   const name = $("f-name").value.trim();
   if (!name) { showFormError("Bitte gib einen Namen ein."); $("f-name").focus(); return; }
   const noTier = NO_TIER.has(cat.id);
@@ -4973,7 +4983,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.185";
+const APP_VERSION = "1.0.186";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
