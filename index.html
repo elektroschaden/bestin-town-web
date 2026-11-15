@@ -1392,8 +1392,11 @@ const state = {
   db: null, uid: null, canEdit: false, canVote: false,
   area: "alle", query: "", adminOpen: false, tierByCat: {}, tagByCat: {}, formTags: [], duels: {}, duelVotes: [], eoDraft: null, eoBusy: false, eoCur: null, eoPinSeen: false, shift: null, form: null, confirmDelete: null, dragging: false, editing: false, sessionKnown: false, showJoin: false, pateSelf: false, opens: 0, opensCounted: false, near: null, nearRadius: 5000, nearBusy: false,
   busy: false, pending: null, note: "",
-  city: loadCity(), kiez: loadKiez(), group: "", suggestions: [], trusted: new Set(), trustedLegacy: new Set(), open: new Set(), paten: [], pateForm: null, suggest: null, thanks: false, nextForm: null
+  city: loadCity(), kiez: "", group: "", suggestions: [], trusted: new Set(), trustedLegacy: new Set(), open: new Set(), paten: [], pateForm: null, suggest: null, thanks: false, nextForm: null
 };
+// Das zuletzt gewählte Gebiet wird bewusst NICHT beim Start geladen: Die App
+// beginnt in „Entdecken" (Stadt-Ebene). Sonst überspringt sie die erste Seite
+// dauerhaft und ein Gerät mit gespeichertem Gebiet zeigt nie die Startansicht.
 function loadKiez() { try { return localStorage.getItem("bit-kiez") || ""; } catch (e) { return ""; } }
 function saveKiez(k) { try { if (k) localStorage.setItem("bit-kiez", k); else localStorage.removeItem("bit-kiez"); } catch (e) {} }
 
@@ -2585,7 +2588,7 @@ function renderDiscover() {
   const total = areas.reduce((sum, a) => sum + a.n, 0) + loose;
   const stadt = curCity().name;
   if (!total) {
-    return `<h1 class="disc-h">Unsere<br>Lieblingsorte.</h1>
+    return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
       <div class="disc-empty"><h3>${esc(stadt)} ist im Aufbau</h3>
       <p>${state.canEdit ? "Trag den ersten Ort ein — dann steht hier das Gebiet." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
   }
@@ -2599,8 +2602,8 @@ function renderDiscover() {
       <span class="disc-chev" aria-hidden="true">›</span></button>`;
   }).join("");
   const gebiete = areas.length;
-  return `<h1 class="disc-h">Unsere<br>Lieblingsorte.</h1>
-    <p class="disc-sub">${gebiete} ${gebiete === 1 ? "Gebiet" : "Gebiete"}, ${total} ${total === 1 ? "Ort" : "Orte"}, ausgewählt von Menschen, die dort wohnen.</p>
+  return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
+    <p class="disc-sub">${gebiete} ${gebiete === 1 ? "Gebiet" : "Gebiete"} · ${total} ${total === 1 ? "Ort" : "Orte"} · Ausgewählt von Menschen, die hier wohnen.</p>
     <div class="disc-list">${rows}</div>
     ${(loose || gebiete) ? `<button type="button" class="disc-all" data-area="">Alle Orte in ${esc(stadt)}</button>` : ""}`;
 }
@@ -2610,6 +2613,10 @@ function renderHome() {
   const canSuggest = !state.canEdit && state.db && state.canVote;
   const f = parseQuery(state.query), tagSel = f.tags || [];
   const filtering = !!(f.cats.size || tagSel.length || f.words.length);
+  // Stadt-Ebene ohne Filter, Gebiet, Nähe oder Suche: die Entdecken-Ansicht.
+  // Sie hängt bewusst NICHT an der Rolle — Pate und Leitung sehen dieselbe
+  // erste Seite, ihre Werkzeuge stehen darunter.
+  const discMode = !filtering && !state.kiez && !state.group && !state.near;
   // In einem Ort führt der erste Blick auf die fünf Gruppen; erst die gewählte
   // Gruppe zeigt ihre Rubriken. Bei aktiver Suche bleibt die flache Liste.
   const gruppenAnsicht = !filtering && !state.group && !state.near;
@@ -2629,8 +2636,8 @@ function renderHome() {
   // Bei aktiver Suche nur die Treffer: kein Spiel, kein Pate, keine Vorschläge.
   // Drei Ebenen, drei Aufgaben: Stadt = Krone, Ort = Tagesfrage.
   // Stadtweit nie ein Duell — auch nicht bei Gleichstand an der Spitze.
-  let html = filtering ? "" : (state.kiez ? eoBlock(eoGroupToday()) : "");
-  if (!filtering && !state.kiez) {
+  let html = discMode ? renderDiscover() : (filtering ? "" : (state.kiez ? eoBlock(eoGroupToday()) : ""));
+  if (!filtering && !state.kiez && !discMode) {
     // Darunter, stadtweit: die Krone. In meiner Nähe ist ein eigener Ort —
     // dort zaehlt der beste Ort im Umkreis, nicht die vorher gewaehlte Stadt.
     const krone = state.near ? bestNear() : bestInTown();
@@ -2639,25 +2646,26 @@ function renderHome() {
   if (state.near) { html += nearBar(); html += nearPlaces(); }
   if (aktiveGruppe) html += `<nav class="topnav" aria-label="Zurück"><button type="button" class="back" data-group-back>← ${esc(state.kiez || curCity().name)}</button><span class="topnav-title">${esc(aktiveGruppe.name)}</span></nav>`;
   if (aktiveGruppe) html += groupSections(aktiveGruppe.id);
-  if (gruppenAnsicht && !cityEmpty) html += groupTiles();
+  if (discMode) { /* Entdecken steht schon */ }
+  else if (gruppenAnsicht && !cityEmpty) html += groupTiles();
   else if (rows && !state.near) html += `<section class="karte" aria-label="Platz 1 je Rubrik">${rows}</section>`;
   else if (filtering) html += `<div class="empty"><h3>Dazu gibt es hier noch nichts</h3><p>Versuch es mit anderen Worten oder wähl oben „Überall“.</p></div>`;
   else if (cityEmpty) html += `<div class="empty"><h3>${esc(curCity().name)} ist im Aufbau</h3><p>${state.canEdit ? "Öffne eine Rubrik und trag den ersten Ort ein." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p>${state.canEdit ? `<div class="chips">${Object.values(CATS).map(c => `<a class="chip" href="#${c.id}">${esc(c.name)}</a>`).join("")}</div>` : ""}</div>`;
   else if (state.kiez) html += `<div class="empty"><h3>In ${esc(state.kiez)} gibt es hier noch nichts</h3><p>Wähl oben „Überall“, um alle Orte zu sehen.</p></div>`;
   const xr = x ? pateRole(x, state.city, state.kiez) : "";
   const xk = !!xr && !xr.startsWith("Stadt-Pate");
-  if (x && !filtering) html += `<section class="pate2" aria-label="${xk ? "Dein " + areaWord(state.city).pate : "Dein Stadt-Pate"}">
+  if (x && !filtering && !discMode) html += `<section class="pate2" aria-label="${xk ? "Dein " + areaWord(state.city).pate : "Dein Stadt-Pate"}">
       <span class="pate2-mark">${x.photo ? pAvatar(x, x.name) : esc(String(x.name || "?").trim().charAt(0).toUpperCase())}</span>
       <span class="pate2-text">
         <span class="pate2-role">${"Dein " + xr}</span>
         <span class="pate2-name">${esc(x.name)}${x.note ? `<span class="pate2-note">, ${esc(String(x.note).trim().replace(/[.,;]+$/, ""))}</span>` : ""}${state.canEdit && state.mode === "owner" ? `<button type="button" class="btn icon name-edit" data-pate-edit="${esc(x.id)}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>` : ""}</span>
       </span>
     </section>`;
-  if (x && !state.kiez && !filtering) {
+  if (x && !state.kiez && !filtering && !discMode) {
     const more = kiezPaten(state.city).filter(y => y.id !== x.id);
     if (more.length) html += `<div class="pate-more" aria-label="Weitere Paten">${more.slice(0, 6).map(y => `<button type="button" class="pm" data-pm="${esc(y.id)}" title="${esc(y.name)} · ${esc(pateRole(y, state.city, ""))}">${y.photo ? `<img src="${photoURL(y.photo)}" alt="" loading="lazy">` : esc(String(y.name || "?").trim().charAt(0).toUpperCase())}</button>`).join("")}${more.length > 6 ? `<span class="pm-n">+${more.length - 6}</span>` : ""}<span class="pm-t">${more.length === 1 ? esc(more[0].name) + " · " + esc(kiezFor(more[0], state.city).join(", ")) : "Paten in " + more.length + " " + areaWord(state.city).dat}</span></div>`;
   }
-  if (!filtering) html += suggestCard();
+  if (!filtering && !discMode) html += suggestCard();
   // Von der Gesamtübersicht aus direkt einen Ort eintragen können — nicht
   // erst in eine Rubrik wechseln müssen, das ist der Normalfall. Erst die
   // Google-Suche (Name, Adresse, Rubrik-Vermutung); nur wer den Ort dort
@@ -2686,11 +2694,6 @@ function renderHome() {
   }
   // Beim Bearbeiten verschwindet alles andere: nur das Formular bleibt.
   if ((state.canEdit || state.pateSelf) && state.pateForm) html = patenAdminBlock();
-  // Stadt-Ebene: die neue Entdecken-Ansicht. Sobald ein Gebiet, eine Suche
-  // oder der Bearbeiten-Modus aktiv ist, bleibt die gewohnte Ansicht.
-  if (!filtering && !state.kiez && !state.group && !state.near && !state.canEdit && !state.pateSelf) {
-    html = renderDiscover();
-  }
   const view = $("view");
   const keepSuggest = $("suggestForm");
   const keepPate = $("pateForm");
@@ -4824,7 +4827,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.172";
+const APP_VERSION = "1.0.174";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
