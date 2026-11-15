@@ -1035,6 +1035,32 @@ body.boot-reveal .ranking > li { animation: none !important; }
 .pv-route { background:none; border:1px solid var(--line); color: var(--ink); }
 .pv-save { background: var(--black); border:0; color:#F6F1E7; }
 .pv-save.on { background: var(--deep); }
+
+/* ---------- Zwei Reiter ---------- */
+.tabbar { position:fixed; left:0; right:0; bottom:0; z-index:50; display:flex;
+  background: var(--paper); border-top:1px solid var(--line);
+  padding:8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); }
+.tab { flex:1; display:grid; justify-items:center; gap:4px; padding:6px 0 2px;
+  border:0; background:none; font:inherit; font-size:0.6875rem; letter-spacing:.02em;
+  color: var(--muted); cursor:pointer; }
+.tab.on { color: var(--ink); font-weight:700; }
+.tab svg { width:20px; height:20px; }
+body { padding-bottom: 76px; }
+
+/* ---------- Meine Orte ---------- */
+.sv-h { font-family: var(--font-display); font-size:1.875rem; line-height:1.06; font-weight:400; margin:14px 0 0; }
+.sv-sub { font-size:0.7188rem; color: var(--muted); margin:5px 0 0; }
+.sv-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+.sv-tile { display:block; width:100%; border:0; background:none; padding:0; text-align:left; font:inherit; color:inherit; cursor:pointer; }
+.sv-tile i { display:block; aspect-ratio:1/1; border-radius:10px; overflow:hidden; background: var(--sign-soft);
+  display:grid; place-items:center; color: var(--muted); font-style:normal; }
+.sv-tile img { width:100%; height:100%; object-fit:cover; display:block; }
+.sv-tile .k-ico { width:26px; height:26px; stroke-width:1; opacity:.7; }
+.sv-tile .nm { display:block; font-size:0.7812rem; line-height:1.3; margin-top:6px; }
+.sv-actions { margin:20px 0 0; display:grid; gap:8px; }
+.sv-share { min-height:48px; border:0; border-radius:12px; background: var(--black); color:#F6F1E7;
+  font:inherit; font-size:0.875rem; font-weight:600; cursor:pointer; }
+.sv-empty { margin-top:18px; font-size:0.8125rem; color: var(--muted); line-height:1.5; }
 </style>
   </div>
 </div>
@@ -1425,7 +1451,7 @@ const state = {
   db: null, uid: null, canEdit: false, canVote: false,
   area: "alle", query: "", adminOpen: false, tierByCat: {}, tagByCat: {}, formTags: [], duels: {}, duelVotes: [], eoDraft: null, eoBusy: false, eoCur: null, eoPinSeen: false, shift: null, form: null, confirmDelete: null, dragging: false, editing: false, sessionKnown: false, showJoin: false, pateSelf: false, opens: 0, opensCounted: false, near: null, nearRadius: 5000, nearBusy: false,
   busy: false, pending: null, note: "",
-  city: loadCity(), kiez: "", group: "", areaFilter: "", placeView: null, saved: (() => { try { const v = JSON.parse(localStorage.getItem("bit-saved") || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(), suggestions: [], trusted: new Set(), trustedLegacy: new Set(), open: new Set(), paten: [], pateForm: null, suggest: null, thanks: false, nextForm: null
+  city: loadCity(), kiez: "", group: "", areaFilter: "", placeView: null, tab: "discover", saved: (() => { try { const v = JSON.parse(localStorage.getItem("bit-saved") || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(), suggestions: [], trusted: new Set(), trustedLegacy: new Set(), open: new Set(), paten: [], pateForm: null, suggest: null, thanks: false, nextForm: null
 };
 // Das zuletzt gewählte Gebiet wird bewusst NICHT beim Start geladen: Die App
 // beginnt in „Entdecken" (Stadt-Ebene). Sonst überspringt sie die erste Seite
@@ -2186,6 +2212,30 @@ document.addEventListener("click", async e => {
   openShareSheet(d, key);
 });
 // Gebiet wählen: setzt den Ortsteil und zeigt dessen Ansicht.
+// Reiter und Sammlung: wechseln, teilen.
+document.addEventListener("click", e => {
+  const tab = e.target.closest && e.target.closest("[data-tab]");
+  if (tab) {
+    state.tab = tab.dataset.tab;
+    if (state.tab === "saved") state.placeView = null;
+    render(); window.scrollTo({ top: 0 });
+    return;
+  }
+  if (e.target.closest && e.target.closest("[data-sv-share]")) { shareSaved(); return; }
+});
+async function shareSaved() {
+  const list = savedPlaces();
+  if (!list.length) return;
+  const text = "Meine Lieblingsorte in Best in Town:\n" + list.map(p => "· " + p.name + " (" + areaNameOf(p) + ")").join("\n");
+  try {
+    if (navigator.share) { await navigator.share({ title: "Meine Orte", text }); return; }
+    await navigator.clipboard.writeText(text);
+    toast("Liste kopiert.");
+  } catch (err) {
+    if (err && err.name === "AbortError") return;
+    toast("Teilen hat nicht geklappt.");
+  }
+}
 // Ortsansicht: zurück ins Gebiet, Route öffnen, Ort merken.
 document.addEventListener("click", e => {
   const back = e.target.closest && e.target.closest("[data-pv-back]");
@@ -2787,6 +2837,41 @@ function renderPlaceView(id) {
 `;
 }
 
+// ---------- Meine Orte ----------
+// Die gemerkten Orte dieses Geräts. Sie stehen für sich — kein Feed, keine
+// Zahlen, keine Reihenfolge, die etwas behauptet.
+function savedPlaces() {
+  return (state.saved || []).map(id => state.places.find(p => p.id === id)).filter(Boolean);
+}
+function renderSaved() {
+  const list = savedPlaces();
+  if (!list.length) {
+    return `<h1 class="sv-h">Meine Orte</h1>
+      <p class="sv-empty">Noch nichts gemerkt. Öffne einen Ort und tippe auf „Merken" — er erscheint dann hier.</p>
+      <div class="sv-actions"><button type="button" class="sv-share" data-tab="discover">Orte entdecken</button></div>`;
+  }
+  const gebiete = [...new Set(list.map(areaNameOf))];
+  const tiles = list.map(p => `<button type="button" class="sv-tile" data-open-place="${esc(p.id)}">
+      <i>${p.photo ? `<img src="${photoURL(p.photo)}" alt="" loading="lazy" draggable="false">` : (CAT_ICON[mapCat(p.category)] || "")}</i>
+      <span class="nm">${esc(p.name)}</span>
+    </button>`).join("");
+  return `<h1 class="sv-h">Meine Orte</h1>
+    <p class="sv-sub">${list.length} ${list.length === 1 ? "Ort" : "Orte"} · ${esc(gebiete.join(" · "))}</p>
+    <div class="sv-grid">${tiles}</div>
+    <div class="sv-actions"><button type="button" class="sv-share" data-sv-share>Link teilen</button></div>`;
+}
+function tabsHtml() {
+  const on = state.tab === "saved";
+  return `<nav class="tabbar" aria-label="Bereiche">
+    <button type="button" class="tab${on ? "" : " on"}" data-tab="discover" aria-current="${on ? "false" : "page"}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+      <span>Entdecken</span></button>
+    <button type="button" class="tab${on ? " on" : ""}" data-tab="saved" aria-current="${on ? "page" : "false"}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+      <span>Meine Orte</span></button>
+  </nav>`;
+}
+
 function renderHome() {
   const filled = Object.keys(CATS).filter(id => placesOf(id).length).length;
   const canSuggest = !state.canEdit && state.db && state.canVote;
@@ -2800,6 +2885,7 @@ function renderHome() {
   const areaMode = !filtering && !!state.kiez && !state.group && !state.near;
   // Ortsansicht: geöffnet aus der Liste; sie schließt die Gebietsansicht ab.
   const placeMode = !!state.placeView && !filtering && !state.near;
+  const savedMode = state.tab === "saved";
   // In einem Ort führt der erste Blick auf die fünf Gruppen; erst die gewählte
   // Gruppe zeigt ihre Rubriken. Bei aktiver Suche bleibt die flache Liste.
   const gruppenAnsicht = !filtering && !state.group && !state.near;
@@ -2819,7 +2905,8 @@ function renderHome() {
   // Bei aktiver Suche nur die Treffer: kein Spiel, kein Pate, keine Vorschläge.
   // Drei Ebenen, drei Aufgaben: Stadt = Krone, Ort = Tagesfrage.
   // Stadtweit nie ein Duell — auch nicht bei Gleichstand an der Spitze.
-  let html = placeMode ? renderPlaceView(state.placeView)
+  let html = savedMode ? renderSaved()
+    : placeMode ? renderPlaceView(state.placeView)
     : discMode ? renderDiscover()
     : (areaMode ? renderArea() : (filtering ? "" : (state.kiez ? eoBlock(eoGroupToday()) : "")));
   if (!filtering && !state.kiez && !discMode) {
@@ -2831,7 +2918,7 @@ function renderHome() {
   if (state.near) { html += nearBar(); html += nearPlaces(); }
   if (aktiveGruppe) html += `<nav class="topnav" aria-label="Zurück"><button type="button" class="back" data-group-back>← ${esc(state.kiez || curCity().name)}</button><span class="topnav-title">${esc(aktiveGruppe.name)}</span></nav>`;
   if (aktiveGruppe) html += groupSections(aktiveGruppe.id);
-  if (discMode || areaMode || placeMode) { /* Ansicht steht schon */ }
+  if (discMode || areaMode || placeMode || savedMode) { /* Ansicht steht schon */ }
   else if (gruppenAnsicht && !cityEmpty) html += groupTiles();
   else if (rows && !state.near) html += `<section class="karte" aria-label="Platz 1 je Rubrik">${rows}</section>`;
   else if (filtering) html += `<div class="empty"><h3>Dazu gibt es hier noch nichts</h3><p>Versuch es mit anderen Worten oder wähl oben „Überall“.</p></div>`;
@@ -2839,18 +2926,18 @@ function renderHome() {
   else if (state.kiez) html += `<div class="empty"><h3>In ${esc(state.kiez)} gibt es hier noch nichts</h3><p>Wähl oben „Überall“, um alle Orte zu sehen.</p></div>`;
   const xr = x ? pateRole(x, state.city, state.kiez) : "";
   const xk = !!xr && !xr.startsWith("Stadt-Pate");
-  if (x && !filtering && !discMode && !areaMode && !placeMode) html += `<section class="pate2" aria-label="${xk ? "Dein " + areaWord(state.city).pate : "Dein Stadt-Pate"}">
+  if (x && !filtering && !discMode && !areaMode && !placeMode && !savedMode) html += `<section class="pate2" aria-label="${xk ? "Dein " + areaWord(state.city).pate : "Dein Stadt-Pate"}">
       <span class="pate2-mark">${x.photo ? pAvatar(x, x.name) : esc(String(x.name || "?").trim().charAt(0).toUpperCase())}</span>
       <span class="pate2-text">
         <span class="pate2-role">${"Dein " + xr}</span>
         <span class="pate2-name">${esc(x.name)}${x.note ? `<span class="pate2-note">, ${esc(String(x.note).trim().replace(/[.,;]+$/, ""))}</span>` : ""}${state.canEdit && state.mode === "owner" ? `<button type="button" class="btn icon name-edit" data-pate-edit="${esc(x.id)}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>` : ""}</span>
       </span>
     </section>`;
-  if (x && !state.kiez && !filtering && !discMode && !areaMode && !placeMode) {
+  if (x && !state.kiez && !filtering && !discMode && !areaMode && !placeMode && !savedMode) {
     const more = kiezPaten(state.city).filter(y => y.id !== x.id);
     if (more.length) html += `<div class="pate-more" aria-label="Weitere Paten">${more.slice(0, 6).map(y => `<button type="button" class="pm" data-pm="${esc(y.id)}" title="${esc(y.name)} · ${esc(pateRole(y, state.city, ""))}">${y.photo ? `<img src="${photoURL(y.photo)}" alt="" loading="lazy">` : esc(String(y.name || "?").trim().charAt(0).toUpperCase())}</button>`).join("")}${more.length > 6 ? `<span class="pm-n">+${more.length - 6}</span>` : ""}<span class="pm-t">${more.length === 1 ? esc(more[0].name) + " · " + esc(kiezFor(more[0], state.city).join(", ")) : "Paten in " + more.length + " " + areaWord(state.city).dat}</span></div>`;
   }
-  if (!filtering && !discMode && !areaMode && !placeMode) html += suggestCard();
+  if (!filtering && !discMode && !areaMode && !placeMode && !savedMode) html += suggestCard();
   // Von der Gesamtübersicht aus direkt einen Ort eintragen können — nicht
   // erst in eine Rubrik wechseln müssen, das ist der Normalfall. Erst die
   // Google-Suche (Name, Adresse, Rubrik-Vermutung); nur wer den Ort dort
@@ -2879,6 +2966,7 @@ function renderHome() {
   }
   // Beim Bearbeiten verschwindet alles andere: nur das Formular bleibt.
   if ((state.canEdit || state.pateSelf) && state.pateForm) html = patenAdminBlock();
+  html += tabsHtml();
   const view = $("view");
   const keepSuggest = $("suggestForm");
   const keepPate = $("pateForm");
@@ -5056,7 +5144,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.187";
+const APP_VERSION = "1.0.188";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
