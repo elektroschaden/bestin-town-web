@@ -2672,9 +2672,8 @@ function renderDiscover() {
         <p>${state.canEdit ? "Trag den ersten Ort ein." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
     }
     const pat = pateFor(state.city, stadt);
-    const sub = `${total} ${total === 1 ? "Ort" : "Orte"}${pat ? " · Ausgewählt von " + esc(pat.name) : ""}`;
     return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
-      <p class="disc-sub"><span class="disc-count">${sub}</span></p>
+      ${pat ? `<p class="disc-sub"><span class="disc-say">Ausgewählt von ${esc(pat.name)}</span></p>` : ""}
       ${areaBodyHtml(stadt)}`;
   }
   if (!total) {
@@ -2693,7 +2692,7 @@ function renderDiscover() {
   }).join("");
   const gebiete = areas.length;
   return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
-    <p class="disc-sub"><span class="disc-count">${gebiete} ${gebiete === 1 ? "Gebiet" : "Gebiete"} · ${total} ${total === 1 ? "Ort" : "Orte"}</span><span class="disc-say">Ausgewählt von Menschen, die diese Orte kennen und lieben.</span></p>
+    <p class="disc-sub"><span class="disc-say">Ausgewählt von Menschen, die diese Orte kennen und lieben.</span></p>
     <div class="disc-list">${rows}</div>
     <button type="button" class="disc-all" data-area="">Alle Orte in ${esc(stadt)}</button>`;
 }
@@ -4952,7 +4951,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.183";
+const APP_VERSION = "1.0.184";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
