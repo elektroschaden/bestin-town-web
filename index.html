@@ -953,6 +953,9 @@ body.boot-reveal .ranking > li { animation: none !important; }
 .disc-h { font-family: var(--font-display); font-size:1.875rem; line-height:1.08; font-weight:400;
   margin:14px 0 0; }
 .disc-sub { font-size:0.75rem; color: var(--muted); margin:6px 0 0; line-height:1.45; }
+.disc-sub span { display:block; }
+.disc-count { font-variant-numeric: tabular-nums; }
+.disc-say { margin-top:3px; font-size:0.6875rem; }
 .disc-list { margin-top:14px; }
 .disc-row { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
   width:100%; padding:14px 0; border:0; border-top:1px solid var(--line); background:none;
@@ -2603,7 +2606,7 @@ function renderDiscover() {
   }).join("");
   const gebiete = areas.length;
   return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
-    <p class="disc-sub">${gebiete} ${gebiete === 1 ? "Gebiet" : "Gebiete"} · ${total} ${total === 1 ? "Ort" : "Orte"} · Empfohlen von Menschen, die diese Orte kennen und lieben.</p>
+    <p class="disc-sub"><span class="disc-count">${gebiete} ${gebiete === 1 ? "Gebiet" : "Gebiete"} · ${total} ${total === 1 ? "Ort" : "Orte"}</span><span class="disc-say">Ausgewählt von Menschen, die diese Orte kennen und lieben.</span></p>
     <div class="disc-list">${rows}</div>
     ${(loose || gebiete) ? `<button type="button" class="disc-all" data-area="">Alle Orte in ${esc(stadt)}</button>` : ""}`;
 }
@@ -4827,7 +4830,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.175";
+const APP_VERSION = "1.0.176";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
