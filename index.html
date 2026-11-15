@@ -977,6 +977,8 @@ body.boot-reveal .ranking > li { animation: none !important; }
 .disc-empty p { margin:0; font-size:0.8125rem; color: var(--muted); line-height:1.45; }
 
 /* ---------- Gebiet: die Orte eines Gebiets, alphabetisch ---------- */
+.area-region { margin:14px 0 0; font-size:0.625rem; letter-spacing:.18em; text-transform:uppercase;
+  color: var(--muted); font-weight:600; }
 .area-h { font-family: var(--font-display); font-size:2.125rem; line-height:1.06; font-weight:400; margin:10px 0 0; }
 .area-sub { font-size:0.7188rem; color: var(--muted); margin:5px 0 0; line-height:1.4; }
 .area-filter { display:flex; gap:16px; margin:16px 0 2px; overflow-x:auto; scrollbar-width:none; }
@@ -2611,65 +2613,48 @@ function groupTiles() {
     </button>`;
   }).join("")}</section>`;
 }
-// ---------- Entdecken ----------
-// Die kuratierte Einheit ist das Gebiet, nicht die Stadt: Berlin hat viele,
-// Erkner nur eines. Was hier steht, ist eine Auswahl — keine Rangfolge.
+// ---------- Gebiete ----------
+// Zwei Sorten Stadt: solche mit Gebieten (Berlin & Umland) und solche ohne
+// (Tübingen, Freiburg, Catania). Bei den kleinen Städten ist das Gebiet die
+// Stadt selbst — dann entfällt die Gebietsebene und man landet direkt bei den
+// Orten. Ein Ort ohne Gebiet in einer gegliederten Stadt bekommt die Stadt
+// als Gebiet, damit er nicht unsichtbar wird.
+const SUBDIVIDED = new Set(["berlin", "berlin-umland"]);
+function areaNameOf(p) {
+  const city = cityOf(p);
+  if (!SUBDIVIDED.has(city)) return (CITY[city] || {}).name || city;
+  return kiezOf(p) || ((CITY[city] || {}).name || city).replace(" & ", " ");
+}
+// Wo das Gebiet außerhalb der Stadt liegt, steht das Land dabei: Erkner liegt
+// in Brandenburg, nicht in Berlin.
+function regionOf(kiez) {
+  if (state.city !== "berlin-umland") return "";
+  return kiez && kiez !== (CITY["berlin-umland"] || {}).name ? "Brandenburg" : "";
+}
 function discoverAreas() {
   const map = new Map();
   state.places.forEach(p => {
     if (cityOf(p) !== state.city || !CATS[mapCat(p.category)]) return;
-    const k = kiezOf(p) || "";
+    const k = areaNameOf(p);
     if (!map.has(k)) map.set(k, []);
     map.get(k).push(p);
   });
-  const areas = [...map.entries()].filter(([k, list]) => k && list.length).map(([k, list]) => ({
+  const areas = [...map.entries()].filter(([, list]) => list.length).map(([k, list]) => ({
     kiez: k,
     n: list.length,
     thumbs: list.filter(p => p.photo).slice(0, 3),
   }));
   areas.sort((a, b) => a.kiez.localeCompare(b.kiez, "de"));
-  const loose = (map.get("") || []).length;
-  return { areas, loose };
+  return { areas };
 }
-function renderDiscover() {
-  const { areas, loose } = discoverAreas();
-  const total = areas.reduce((sum, a) => sum + a.n, 0) + loose;
-  const stadt = curCity().name;
-  if (!total) {
-    return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
-      <div class="disc-empty"><h3>${esc(stadt)} ist im Aufbau</h3>
-      <p>${state.canEdit ? "Trag den ersten Ort ein — dann steht hier das Gebiet." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
-  }
-  const rows = areas.map(a => {
-    const thumbs = a.thumbs.length
-      ? a.thumbs.map(x => `<i><img src="${photoURL(x.photo)}" alt="" loading="lazy" draggable="false"></i>`).join("")
-      : `<i>${esc(a.kiez.charAt(0).toUpperCase())}</i>`;
-    return `<button type="button" class="disc-row" data-area="${esc(a.kiez)}">
-      <span class="disc-thumbs" aria-hidden="true">${thumbs}</span>
-      <span><span class="disc-nm">${esc(a.kiez)}</span><span class="disc-ct">${a.n} ${a.n === 1 ? "Lieblingsort" : "Lieblingsorte"}</span></span>
-      <span class="disc-chev" aria-hidden="true">›</span></button>`;
-  }).join("");
-  const gebiete = areas.length;
-  return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
-    <p class="disc-sub"><span class="disc-count">${gebiete} ${gebiete === 1 ? "Gebiet" : "Gebiete"} · ${total} ${total === 1 ? "Ort" : "Orte"}</span><span class="disc-say">Ausgewählt von Menschen, die diese Orte kennen und lieben.</span></p>
-    <div class="disc-list">${rows}</div>
-    ${(loose || gebiete) ? `<button type="button" class="disc-all" data-area="">Alle Orte in ${esc(stadt)}</button>` : ""}`;
-}
-
-// ---------- Gebiet ----------
-// Ein Gebiet ist eine Auswahl, keine Rangfolge: alle Orte alphabetisch, die
-// Rubriken sind Filter. Deshalb stehen hier keine Punkte und keine Nummern.
-function renderArea() {
-  const city = state.city, kiez = state.kiez;
-  const all = state.places.filter(p => cityOf(p) === city && kiezOf(p) === kiez && CATS[mapCat(p.category)]);
+// Die Ortsliste eines Gebiets: alphabetisch, Rubriken als Filter, keine Nummern.
+function areaBodyHtml(kiez) {
+  const all = state.places.filter(p => cityOf(p) === state.city && areaNameOf(p) === kiez && CATS[mapCat(p.category)]);
   const areaOf = p => { const c = CATS[mapCat(p.category)]; return c && c.area ? c.area.id : ""; };
   const present = AREAS.filter(a => all.some(p => areaOf(p) === a.id));
   const filter = state.areaFilter || "";
   const shown = (filter ? all.filter(p => areaOf(p) === filter) : all.slice())
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "de"));
-  const pat = pateFor(city, kiez);
-  const stadt = curCity().name;
-  const n = all.length;
   const chips = present.length > 1
     ? `<div class="area-filter" role="tablist">
         <button type="button" class="${filter ? "" : "on"}" data-area-cat="">Alle</button>
@@ -2684,13 +2669,57 @@ function renderArea() {
       ${line ? `<span class="ai-line">${esc(line)}</span>` : ""}
     </button>`;
   }).join("");
-  return `<button type="button" class="back-btn" data-area-back aria-label="Zurück zu ${esc(stadt)}">
+  return `${chips}<div class="area-list">${rows || `<p class="area-sub area-empty">Hier ist noch nichts eingetragen.</p>`}</div>`;
+}
+// Kopf eines Gebiets: Land (nur außerhalb der Stadt), Name, Zahl und Herkunft.
+function areaHeadHtml(kiez, withBack) {
+  const reg = regionOf(kiez);
+  const all = state.places.filter(p => cityOf(p) === state.city && areaNameOf(p) === kiez && CATS[mapCat(p.category)]);
+  const pat = pateFor(state.city, kiez);
+  return `${withBack ? `<button type="button" class="back-btn" data-area-back aria-label="Zurück zu ${esc(curCity().name)}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4.6"/><path d="M11 5.6L4.6 12 11 18.4"/></svg>
-      <span>${esc(stadt)}</span></button>
+      <span>${esc(curCity().name)}</span></button>` : ""}
+    ${reg ? `<p class="area-region">${esc(reg)}</p>` : ""}
     <h1 class="area-h">${esc(kiez)}</h1>
-    <p class="area-sub">${n} ${n === 1 ? "Lieblingsort" : "Lieblingsorte"}${pat ? " · Ausgewählt von " + esc(pat.name) : ""}</p>
-    ${chips}
-    <div class="area-list">${rows || `<p class="area-sub area-empty">In diesem Gebiet ist noch nichts eingetragen.</p>`}</div>`;
+    <p class="area-sub">${all.length} ${all.length === 1 ? "Lieblingsort" : "Lieblingsorte"}${pat ? " · Ausgewählt von " + esc(pat.name) : ""}</p>`;
+}
+function renderArea() {
+  return `${areaHeadHtml(state.kiez, true)}${areaBodyHtml(state.kiez)}`;
+}
+function renderDiscover() {
+  const { areas } = discoverAreas();
+  const stadt = curCity().name;
+  const total = areas.reduce((sum, a) => sum + a.n, 0);
+  // Kleine Stadt ohne Unterteilung: keine Zwischenebene — der Einstieg führt
+  // direkt zu den Orten, das Gebiet ist die Stadt selbst.
+  if (!SUBDIVIDED.has(state.city)) {
+    if (!total) {
+      return `<h1 class="disc-h">${esc(stadt)}</h1>
+        <div class="disc-empty"><h3>Noch keine Lieblingsorte</h3>
+        <p>${state.canEdit ? "Trag den ersten Ort ein." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
+    }
+    return `${areaHeadHtml(stadt, false)}${areaBodyHtml(stadt)}`;
+  }
+  if (!total) {
+    return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
+      <div class="disc-empty"><h3>${esc(stadt)} ist im Aufbau</h3>
+      <p>${state.canEdit ? "Trag den ersten Ort ein — dann steht hier das Gebiet." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
+  }
+  const rows = areas.map(a => {
+    const reg = regionOf(a.kiez);
+    const thumbs = a.thumbs.length
+      ? a.thumbs.map(x => `<i><img src="${photoURL(x.photo)}" alt="" loading="lazy" draggable="false"></i>`).join("")
+      : `<i>${esc(a.kiez.charAt(0).toUpperCase())}</i>`;
+    return `<button type="button" class="disc-row" data-area="${esc(a.kiez)}">
+      <span class="disc-thumbs" aria-hidden="true">${thumbs}</span>
+      <span><span class="disc-nm">${esc(a.kiez)}</span><span class="disc-ct">${a.n} ${a.n === 1 ? "Lieblingsort" : "Lieblingsorte"}${reg ? " · " + reg : ""}</span></span>
+      <span class="disc-chev" aria-hidden="true">›</span></button>`;
+  }).join("");
+  const gebiete = areas.length;
+  return `<h1 class="disc-h">Unsere<br>Lieblingsorte</h1>
+    <p class="disc-sub"><span class="disc-count">${gebiete} ${gebiete === 1 ? "Gebiet" : "Gebiete"} · ${total} ${total === 1 ? "Ort" : "Orte"}</span><span class="disc-say">Ausgewählt von Menschen, die diese Orte kennen und lieben.</span></p>
+    <div class="disc-list">${rows}</div>
+    <button type="button" class="disc-all" data-area="">Alle Orte in ${esc(stadt)}</button>`;
 }
 
 function renderHome() {
@@ -4914,7 +4943,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.178";
+const APP_VERSION = "1.0.179";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
