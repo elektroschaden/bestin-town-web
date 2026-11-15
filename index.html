@@ -249,7 +249,7 @@ body.has-homebar { padding-bottom: 110px; }
 .where-face small { display: inline; margin-left: .28em; font-family: var(--font-display); font-size: 1em; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--ink); line-height: 1.1; }
 .where-panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 60; width: min(320px, calc(100vw - 32px));
   max-height: min(70vh, 520px); overflow: auto; overscroll-behavior: contain; background: var(--surface); border: 1px solid var(--line);
-  border-radius: 16px; padding: 6px; box-shadow: 0 18px 40px -18px rgba(21,38,31,.45); animation: rise .18s ease both; }
+  border-radius: 16px; padding: 6px; box-shadow: 0 18px 40px -18px rgba(21,38,31,.45); }
 .where-panel ul { list-style: none; margin: 0; padding: 0; }
 .wp-search { display: flex; align-items: center; gap: 8px; margin: 9px 10px 7px; padding: 0 10px; height: 38px;
   border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); }
@@ -1350,77 +1350,22 @@ function saveCity(c) { try { localStorage.setItem("bit-city", c); } catch (e) {}
 function cityShort(c) { return c.name.split(" & "); }
 function renderWhere() {
   const el = $("where"); if (!el) return;
-  const c = curCity(), [a, b] = cityShort(c);
-  const sub = state.near ? "" : (state.kiez || (b ? "& " + b : ""));
-  const main = state.near ? "In meiner Nähe" : a;
+  const c = curCity();
   let html = `<button type="button" class="plate where-btn" id="whereBtn" aria-haspopup="true" aria-expanded="${state.whereOpen ? "true" : "false"}">
-    <span class="sr">Ort wählen: </span><span class="where-face"><span><b>${esc(main)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></span></button>`;
+    <span class="sr">Stadt wählen: </span><span class="where-face"><span><b>${esc(c.name)}</b></span></span></button>`;
   if (state.whereOpen) {
-    const q = String(state.whereQ || "").trim().toLowerCase();
-    html += `<div class="where-panel" role="menu">
-      <div class="wp-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
-        <input id="whereQ" type="text" placeholder="Ort, Rubrik oder Location" value="${esc(state.whereQ || "")}" autocomplete="off" aria-label="Suchen">
-        <button type="button" class="wp-clear" data-wclear ${q ? "" : "hidden"} aria-label="Suche leeren">×</button>
-      </div>`;
-    if (q.length >= 2) {
-      html += whereHits(q);
-    } else {
-      const countries = [...new Set(CITIES.filter(x => !x.hidden).map(x => x.country))];
-      const land = state.whereCountry || (CITIES.find(x => x.id === state.city) || {}).country || countries[0];
-      if (countries.length > 1) {
-        html += `<div class="wp-lands">${countries.map(k => `<button type="button" class="wp-land${k === land ? " on" : ""}" data-landpick="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
-      }
-      html += `<ul><li><button type="button" class="wp-item wp-near ${state.near ? "on" : ""}" data-near="1">In meiner Nähe</button></li>` +
-        CITIES.filter(ct => ct.country === land && !ct.hidden).map(ct => cityItem(ct, state.whereCity)).join("") + `</ul>`;
-    }
-    html += `</div>`;
+    // Eine flache Liste. Kein Baum, keine Suche, keine Zahlen: vier Städte,
+    // ein Griff. Das Land steht nur dort, wo es nicht Deutschland ist.
+    const rows = CITIES.filter(x => !x.hidden).map(x => {
+      const on = x.id === state.city;
+      const land = x.country && x.country !== "Deutschland" ? ` · ${esc(x.country)}` : "";
+      return `<li><button type="button" class="wp-item ${on ? "on" : ""}" data-pick="${esc(x.id)}" data-kiez="">${esc(x.name)}${land}</button></li>`;
+    }).join("");
+    html += `<div class="where-panel" role="menu"><ul>${rows}</ul></div>`;
   }
   el.innerHTML = html;
 }
-// Treffer im geöffneten Blatt: Orte, Rubriken, Locations — Gruppen nicht,
-// die fünf stehen ohnehin sofort da.
-function whereHits(q) {
-  const orte = [], staedte = [];
-  CITIES.forEach(ct => {
-    if (String(ct.name).toLowerCase().includes(q)) staedte.push({ city: ct.id, name: ct.name });
-    const list = kiezList(null, ct.id);
-    // Eine Stadt ohne Ortsteile (Catania) hätte sonst gar keinen Treffer.
-    if (!list.length) { if (String(ct.name).toLowerCase().includes(q)) orte.push({ city: ct.id, k: "", n: "", ganz: ct.name }); return; }
-    list.forEach(([k, n]) => { if (String(k).toLowerCase().includes(q)) orte.push({ city: ct.id, k, n }); });
-  });
-  const rub = Object.values(CATS).filter(c => String(c.name).toLowerCase().includes(q));
-  const loc = state.places.filter(p => String(p.name || "").toLowerCase().includes(q)).slice(0, 12);
-  let html = "";
-  if (staedte.length) html += `<p class="wp-head">Städte</p><ul>` + staedte.map(c =>
-    `<li><button type="button" class="wp-item" data-hitort="${esc(c.city)}" data-hitkiez=""><span>${esc(c.name)}</span><span class="n">Stadt</span></button></li>`).join("") + `</ul>`;
-  if (orte.length) html += `<p class="wp-head">Orte</p><ul>` + orte.slice(0, 10).map(o =>
-    `<li><button type="button" class="wp-item" data-hitort="${esc(o.city)}" data-hitkiez="${esc(o.k)}"><span>${esc(o.ganz || o.k)}</span><span class="n">${o.ganz ? "ganze Stadt" : o.n}</span></button></li>`).join("") + `</ul>`;
-  if (rub.length) html += `<p class="wp-head">Rubriken</p><ul>` + rub.map(c =>
-    `<li><button type="button" class="wp-item" data-hitrub="${c.id}">${esc(c.name)}</button></li>`).join("") + `</ul>`;
-  if (loc.length) html += `<p class="wp-head">Locations</p><ul>` + loc.map(pl =>
-    `<li><button type="button" class="wp-item" data-hitloc="${esc(pl.id)}"><span>${esc(pl.name)}</span><span class="n">${esc((CATS[mapCat(pl.category)] || {}).name || "")}</span></button></li>`).join("") + `</ul>`;
-  if (!html) html = `<p class="wp-head">Nichts gefunden</p>`;
-  return html;
-}
-function cityItem(ct, open) {
-  {
-    {
-      const list = kiezList(null, ct.id), isOpen = open === ct.id && list.length;
-      const here = ct.id === state.city;
-      if (!list.length) return `<li><button type="button" class="wp-item wp-city ${here ? "on" : ""}" data-pick="${ct.id}" data-kiez="">${esc(ct.name)}</button></li>`;
-      const item = ([k, n]) => `<li><button type="button" class="wp-item ${here && state.kiez === k ? "on" : ""}" data-pick="${ct.id}" data-kiez="${esc(k)}">${esc(k)} <span class="n">${n}</span></button></li>`;
-      const groups = ct.id === "berlin"
-        ? [["Berlin", list.filter(([k]) => !isUmland(k))], ["Umland", list.filter(([k]) => isUmland(k))]].filter(([, l]) => l.length)
-        : [["", list]];
-      // Der Name ist der Griff zum Aufklappen — nicht zum Springen. „Überall in X"
-      // steht als bewusste Wahl in der aufgeklappten Liste.
-      return `<li><button type="button" class="wp-item wp-city ${here && !state.kiez ? "on" : ""}" data-expand="${ct.id}" aria-expanded="${isOpen ? "true" : "false"}">${esc(ct.name)}<span class="n chev${isOpen ? " up" : ""}"></span></button>
-        ${isOpen ? `<ul class="wp-sub"><li><button type="button" class="wp-item ${here && !state.kiez ? "on" : ""}" data-pick="${ct.id}" data-kiez="">Überall in ${esc(ct.name)}</button></li>
-          ${groups.map(([g, l]) => (g && groups.length > 1 ? `<li class="wp-group">${g}</li>` : "") + l.map(item).join("")).join("")}</ul>` : ""}</li>`;
-    }
-  }
-}
+
 function setWhere(city, kiez) {
   if (!CITY[city]) city = "berlin";
   if (city !== state.city) {
@@ -2643,6 +2588,9 @@ function regionOf(kiez) {
   const p = state.places.find(x => cityOf(x) === state.city && areaNameOf(x) === kiez);
   return p && rawCityOf(p) === "berlin-umland" ? "Brandenburg" : "";
 }
+// Anzeigename eines Gebiets. Liegt es außerhalb der Stadt, steht das Land im
+// Namen: „Erkner · Brandenburg". Der Schlüssel (data-area) bleibt „Erkner".
+function areaLabel(kiez) { const r = regionOf(kiez); return r ? kiez + " · " + r : kiez; }
 function discoverAreas() {
   const map = new Map();
   state.places.forEach(p => {
@@ -2718,13 +2666,12 @@ function renderDiscover() {
       <p>${state.canEdit ? "Trag den ersten Ort ein — dann steht hier das Gebiet." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
   }
   const rows = areas.map(a => {
-    const reg = regionOf(a.kiez);
     const thumbs = a.thumbs.length
       ? a.thumbs.map(x => `<i><img src="${photoURL(x.photo)}" alt="" loading="lazy" draggable="false"></i>`).join("")
       : `<i>${esc(a.kiez.charAt(0).toUpperCase())}</i>`;
     return `<button type="button" class="disc-row" data-area="${esc(a.kiez)}">
       <span class="disc-thumbs" aria-hidden="true">${thumbs}</span>
-      <span><span class="disc-nm">${esc(a.kiez)}</span><span class="disc-ct">${a.n} ${a.n === 1 ? "Lieblingsort" : "Lieblingsorte"}${reg ? " · " + reg : ""}</span></span>
+      <span><span class="disc-nm">${esc(areaLabel(a.kiez))}</span><span class="disc-ct">${a.n} ${a.n === 1 ? "Lieblingsort" : "Lieblingsorte"}</span></span>
       <span class="disc-chev" aria-hidden="true">›</span></button>`;
   }).join("");
   const gebiete = areas.length;
@@ -4976,7 +4923,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.180";
+const APP_VERSION = "1.0.181";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
@@ -5267,40 +5214,10 @@ window.addEventListener("scroll", () => { if (!currentCat()) state.homeScroll = 
 $("where").addEventListener("click", e => {
   e.stopPropagation();
   const btn = e.target.closest("button"); if (!btn) return;
-  if (btn.id === "whereBtn") {
-    state.whereOpen = !state.whereOpen;
-    // Aufgeklappt steht die eigene Stadt offen da: von hier ist das nächste
-    // Gebiet ein Griff, ohne erst die Stadt zu suchen.
-    state.whereCity = state.whereOpen ? state.city : null;
-    renderWhere();
-    return;
-  }
-  if (btn.dataset.expand) {
-    const id = btn.dataset.expand;
-    state.whereCity = state.whereCity === id ? null : id; renderWhere(); return;
-  }
-  if (btn.dataset.near) { state.whereOpen = false; state.whereCity = null; renderWhere(); enableNear(); return; }
-  if (btn.dataset.pick) { state.near = null; setWhere(btn.dataset.pick, btn.dataset.kiez); return; }
-  if (btn.dataset.landpick) { state.whereCountry = btn.dataset.landpick; state.whereCity = null; renderWhere(); return; }
-  if (btn.classList.contains("wp-clear")) { state.whereQ = ""; renderWhere(); const q = $("whereQ"); if (q) q.focus(); return; }
-  if (btn.dataset.hitort) { state.whereOpen = false; state.whereQ = ""; state.whereCity = null; setWhere(btn.dataset.hitort, btn.dataset.hitkiez); return; }
-  if (btn.dataset.hitrub) { state.whereOpen = false; state.whereQ = ""; renderWhere(); if (CATS[btn.dataset.hitrub]) location.hash = btn.dataset.hitrub; return; }
-  if (btn.dataset.hitloc) {
-    const pl = state.places.find(x => x.id === btn.dataset.hitloc);
-    state.whereOpen = false; state.whereQ = ""; state.whereCity = null;
-    if (pl) { state.open.add(pl.id); setWhere(cityOf(pl), kiezOf(pl)); if (CATS[mapCat(pl.category)]) location.hash = mapCat(pl.category); }
-    else renderWhere();
-    return;
-  }
+  if (btn.id === "whereBtn") { state.whereOpen = !state.whereOpen; renderWhere(); return; }
+  if (btn.dataset.pick) { state.near = null; state.whereOpen = false; setWhere(btn.dataset.pick, btn.dataset.kiez); return; }
 });
-// Tippen im Suchfeld: Blatt neu zeichnen, Feld behält den Fokus.
-$("where").addEventListener("input", e => {
-  if (e.target.id !== "whereQ") return;
-  state.whereQ = e.target.value;
-  renderWhere();
-  const q = $("whereQ");
-  if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
-});
+
 document.addEventListener("click", e => {
   if (state.whereOpen && !e.target.closest("#where")) { state.whereOpen = false; state.whereCity = null; renderWhere(); }
 });
