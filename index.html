@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Best in Town · Lokal</title>
+<title>beloved.place</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <!-- Auf dem Homescreen: eigenes Icon, kein Browser-Rahmen, Farbe der App -->
 <link rel="manifest" href="site.webmanifest">
@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Best in Town">
+<meta name="apple-mobile-web-app-title" content="beloved.place">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -56,7 +56,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 0 48px;
 }
-.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 28px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 14px; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
 h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
@@ -961,12 +961,12 @@ body.boot-reveal .ranking > li { animation: none !important; }
 .cv-land { font-size: 0.8125rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .cv-on { margin-left: auto; font-size: 0.8125rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .disc-h { font-family: var(--font-display); font-size:1.875rem; line-height:1.08; font-weight:400;
-  margin:8px 0 0; }
-.disc-sub { font-size:0.75rem; color: var(--muted); margin:6px 0 0; line-height:1.45; }
+  margin:0; }
+.disc-sub { font-size:0.75rem; color: var(--muted); margin:4px 0 0; line-height:1.45; }
 .disc-sub span { display:block; }
 .disc-count { font-variant-numeric: tabular-nums; }
 .disc-say { margin-top:3px; font-size:0.6875rem; }
-.disc-list { margin-top:14px; }
+.disc-list { margin-top:10px; }
 .disc-row { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
   width:100%; padding:14px 0; border:0; border-top:1px solid var(--line); background:none;
   font:inherit; color:inherit; text-align:left; cursor:pointer; }
@@ -987,9 +987,9 @@ body.boot-reveal .ranking > li { animation: none !important; }
 .disc-empty p { margin:0; font-size:0.8125rem; color: var(--muted); line-height:1.45; }
 
 /* ---------- Gebiet: die Orte eines Gebiets, alphabetisch ---------- */
-.area-region { margin:14px 0 0; font-size:0.625rem; letter-spacing:.18em; text-transform:uppercase;
+.area-region { margin:6px 0 0; font-size:0.625rem; letter-spacing:.18em; text-transform:uppercase;
   color: var(--muted); font-weight:600; }
-.area-h { font-family: var(--font-display); font-size:2.125rem; line-height:1.06; font-weight:400; margin:10px 0 0; }
+.area-h { font-family: var(--font-display); font-size:2.125rem; line-height:1.06; font-weight:400; margin:2px 0 0; }
 .area-sub { font-size:0.7188rem; color: var(--muted); margin:5px 0 0; line-height:1.4; }
 .area-filter { display:flex; gap:16px; margin:16px 0 2px; overflow-x:auto; scrollbar-width:none; }
 .area-filter::-webkit-scrollbar { display:none; }
@@ -1031,16 +1031,16 @@ body.boot-reveal .ranking > li { animation: none !important; }
 
 /* ---------- Ortsansicht ---------- */
 .pv-photo { display:block; width:100%; aspect-ratio:4/3; border-radius:12px; overflow:hidden;
-  background: var(--sign-soft); margin:14px 0 0; }
+  background: var(--sign-soft); margin:10px 0 0; }
 .pv-photo img { width:100%; height:100%; object-fit:cover; display:block; }
 .pv-band { display:grid; place-items:center; align-content:center; gap:10px; height:100%; color: var(--muted); }
 .pv-band .k-ico { width:44px; height:44px; stroke-width:.9; opacity:.7; }
 .pv-band em { font-style:normal; font-size:0.6875rem; letter-spacing:.18em; text-transform:uppercase; }
-.pv-kat { margin:18px 0 0; font-size:0.625rem; letter-spacing:.16em; text-transform:uppercase; color: var(--muted); }
-.pv-name { font-family: var(--font-display); font-size:2rem; line-height:1.05; font-weight:400; margin:8px 0 0; }
-.pv-say { margin:12px 0 0; font-size:0.9375rem; line-height:1.5; color:#3B4A42; }
-.pv-by { margin:18px 0 0; padding-top:12px; border-top:1px solid var(--line); font-size:0.7188rem; color: var(--muted); }
-.pv-actions { display:flex; gap:10px; margin:18px 0 0; }
+.pv-kat { margin:10px 0 0; font-size:0.625rem; letter-spacing:.16em; text-transform:uppercase; color: var(--muted); }
+.pv-name { font-family: var(--font-display); font-size:2rem; line-height:1.05; font-weight:400; margin:2px 0 0; }
+.pv-say { margin:8px 0 0; font-size:0.9375rem; line-height:1.5; color:#3B4A42; }
+.pv-by { margin:12px 0 0; padding-top:10px; border-top:1px solid var(--line); font-size:0.7188rem; color: var(--muted); }
+.pv-actions { display:flex; gap:10px; margin:14px 0 0; }
 .pv-actions button { flex:1; min-height:48px; border-radius:12px; font:inherit; font-size:0.875rem; font-weight:600; cursor:pointer; }
 .pv-route { background:none; border:1px solid var(--line); color: var(--ink); }
 .pv-save { background: var(--black); border:0; color:#F6F1E7; }
@@ -1058,9 +1058,9 @@ body.boot-reveal .ranking > li { animation: none !important; }
 body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 0px) + 16px); }
 
 /* ---------- Meine Orte ---------- */
-.sv-h { font-family: var(--font-display); font-size:1.875rem; line-height:1.06; font-weight:400; margin:14px 0 0; }
+.sv-h { font-family: var(--font-display); font-size:1.875rem; line-height:1.06; font-weight:400; margin:2px 0 0; }
 .sv-sub { font-size:0.7188rem; color: var(--muted); margin:5px 0 0; }
-.sv-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+.sv-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
 .sv-tile { display:block; width:100%; border:0; background:none; padding:0; text-align:left; font:inherit; color:inherit; cursor:pointer; }
 .sv-tile i { display:block; aspect-ratio:1/1; border-radius:10px; overflow:hidden; background: var(--sign-soft);
   display:grid; place-items:center; color: var(--muted); font-style:normal; }
@@ -1084,22 +1084,64 @@ body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 
   letter-spacing: .19em; text-transform: uppercase; color: var(--ink); white-space: nowrap;
   line-height: 1.45; }
 .crown-stamp svg { width: 180px; height: auto; }
+
+/* ---------- Kopfzeile: Logo links, drei Punkte rechts ---------- */
+.topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px 6px;
+  background: var(--paper); border-bottom: 1px solid var(--line); }
+.topbar-logo { display: block; }
+.topbar-logo svg { display: block; height: 23px; width: auto; }
+.topbar-menu { display: grid; place-items: center; width: 44px; height: 44px; margin-right: -8px;
+  border: 0; border-radius: 99px; background: none; color: var(--ink); cursor: pointer; }
+.topbar-menu svg { width: 21px; height: 21px; }
+.topbar-menu:active { background: rgba(21,38,31,.07); }
+
+/* ---------- Stadt + Aufklappliste ---------- */
+.wherebar { position: relative; margin-top: -4px; width: 100%; }
+.wherebar .where { display: block; position: static; width: 100%; }
+.where-bar { display: flex; }
+.drop { position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%);
+  width: min(100vw, 672px); z-index: 60; background: var(--paper);
+  border-bottom: 1px solid var(--line); box-shadow: 0 26px 30px -22px rgba(21,38,31,.38);
+  padding: 0 24px 11px; }
+.drop ul { list-style: none; margin: 0; padding: 0; }
+.dp { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 11px 0 10px;
+  border: 0; border-top: 1px solid var(--line); background: none; font: inherit; color: var(--ink);
+  text-align: left; cursor: pointer; }
+.drop li:first-child .dp { border-top: 0; }
+.dp-n { font-family: var(--font-display); font-size: 1.3125rem; line-height: 1.15; }
+.dp-land, .dp-on { font-size: 0.6875rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.dp-on { margin-left: auto; }
+
+/* ---------- Enger Rhythmus, eine Stelle ---------- */
+.area-h, .disc-h, .sv-h { margin-top: 2px; }
+.area-region { margin-top: 6px; }
+.area-sub, .disc-sub, .sv-sub { margin-top: 4px; }
+.disc-list, .sv-grid { margin-top: 10px; }
+.pv-photo { margin-top: 8px; }
+.pv-kat { margin-top: 10px; }
+.pv-name { margin-top: 2px; }
+.pv-say { margin-top: 8px; }
+.pv-by { margin-top: 12px; }
+.pv-actions { margin-top: 14px; }
 </style>
   </div>
 </div>
 
 <div class="wrap">
-  <header class="mast">
-    <div class="brand">
-      <h1><button type="button" class="wordmark" id="openSettings" aria-label="Einstellungen"><span class="marke" aria-hidden="true"><span class="sr">Best in Town</span><svg viewBox="7.2 7.2 79.8 103.2"><g transform="translate(8,8)"><rect x="0.800" y="4.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="20.800" y="4.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="40.800" y="4.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="60.000" y="0.000" width="18.000" height="18.000" fill="#A8752A"/><rect x="0.800" y="24.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="20.800" y="24.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="40.800" y="24.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="60.800" y="24.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="0.800" y="44.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="20.800" y="44.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="40.800" y="44.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="60.800" y="44.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><path d="M0.0 80.806100090867H4.765588835359267C7.469525262742812 80.806100090867 8.793740463250295 79.42637886399095 8.793740463250295 77.58675056148952C8.793740463250295 75.80262828535669 7.525031289111388 74.75594321669209 6.272180979649219 74.69250775798515V74.57356627290963C7.421948668712603 74.30396557340511 8.333833387624942 73.49516347489156 8.333833387624942 72.05993622164692C8.333833387624942 70.30753167486756 7.073053645824403 68.99124590669844 4.519776432869854 68.99124590669844H0.0ZM2.1171584343443004 79.0378366794109V75.55681588286728H4.503917568193118C5.820203336362233 75.55681588286728 6.6448642995525224 76.3735474137192 6.6448642995525224 77.42816191472217C6.6448642995525224 78.36383493064962 5.994650847806333 79.0378366794109 4.432552677147805 79.0378366794109ZM2.1171584343443004 74.02643544156223V70.75157988581617H4.297752327395545C5.5664615015344525 70.75157988581617 6.216674953280641 71.4176522022391 6.216674953280641 72.32953692115143C6.216674953280641 73.37622198981603 5.368225693075248 74.02643544156223 4.250175733365337 74.02643544156223Z M12.978260496853942 80.806100090867H20.6856687297478V79.02197781473417H15.095418931198243V75.72333396197301H20.24162051879918V73.96299998285528H15.095418931198243V70.77536818283127H20.65395100039433V68.99124590669844H12.978260496853942Z M29.231376549453937 80.98847703464948C32.054254461913004 80.98847703464948 33.703576388293584 79.56910864608157 33.703576388293584 77.49159737342912C33.703576388293584 75.42994496545339 31.98288957086769 74.51806024654105 30.230485024088324 74.09780033260753L29.12829392905515 73.81234076842628C28.168832616112603 73.57445779827523 27.114218115109637 73.17798618135683 27.114218115109637 72.1868071390608C27.114218115109637 71.29078128482521 27.92302021362319 70.63263840074065 29.255164846469043 70.63263840074065C30.531803452946317 70.63263840074065 31.388182145490077 71.2194163937799 31.491264765888864 72.22645430075265H33.54498774152622C33.48948171515764 70.25202564849897 31.80844205942359 68.83265725993107 29.286882575822514 68.83265725993107C26.812899686251647 68.83265725993107 24.973271383750234 70.22823735148387 24.973271383750234 72.3136780564747C24.973271383750234 73.97885884753201 26.138897937490352 74.9779673221664 28.113326589744027 75.48545099182196L29.453400654928245 75.83434601471016C30.730039261405523 76.16738217292163 31.586417953949283 76.55592435750167 31.586417953949283 77.47573850875237C31.586417953949283 78.4907058480635 30.61109777633 79.18056646150153 29.2155176847772 79.18056646150153C27.88337305193135 79.18056646150153 26.828758550928384 78.57792960378555 26.733605362867966 77.33300872666175H24.64816465787714C24.743317845937554 79.664261834142 26.479863528040184 80.98847703464948 29.231376549453937 80.98847703464948Z M37.38854218458003 70.77536818283127H41.03608106022939V80.806100090867H43.15323949457369V70.77536818283127H46.79284893788468V68.99124590669844H37.38854218458003Z M59.39620587378057 68.99124590669844H57.279047439436276V80.806100090867H59.39620587378057Z M64.04856241534794 80.806100090867H66.20536801138408V74.93832016047456C66.20536801138408 74.28017727639 66.13400312033878 73.0352563992662 66.05470879695508 71.57624084900647C66.8476520307919 73.11455072264988 67.29170024174053 73.95507055051691 67.91019596413324 74.94624959281293L71.59738200147444 80.806100090867H73.99999999999999V68.99124590669844H71.85112383630222V75.19206199530234C71.85112383630222 75.91364033809384 71.89870043033243 77.11098462118744 71.9779947537161 78.25282287791245C71.46258165172218 77.0713374594956 70.94716854972825 76.17531160525999 70.52690863579474 75.50130985649871L66.44325098153513 68.99124590669844H64.04856241534794Z" fill="#15181D"/><path d="M0.0 90.1224614680801H4.102022758793154V101.40302405476127H6.482979447049182V90.1224614680801H10.576084765062351V88.11603729258344H0.0Z M24.17323494350749 101.58137287036098C27.651036847701686 101.58137287036098 30.263846996237326 99.0577371296252 30.263846996237326 94.76844811445234C30.263846996237326 90.47024165849952 27.651036847701686 87.93768847698375 24.17323494350749 87.93768847698375C20.68651559853331 87.93768847698375 18.064788009217683 90.47024165849952 18.064788009217683 94.76844811445234C18.064788009217683 99.0488196888452 20.68651559853331 101.58137287036098 24.17323494350749 101.58137287036098ZM24.17323494350749 99.45010452394453C21.99737939319112 99.45010452394453 20.454662138253696 97.7914605388673 20.454662138253696 94.76844811445234C20.454662138253696 91.72760080847742 21.99737939319112 90.06895682340019 24.17323494350749 90.06895682340019C26.331255612263888 90.06895682340019 27.86505542642133 91.71868336769744 27.86505542642133 94.76844811445234C27.86505542642133 97.8003779796473 26.331255612263888 99.45010452394453 24.17323494350749 99.45010452394453Z M41.04308588820717 101.40302405476127H43.77182276688262L45.70690741613939 94.06397029283352C45.965513198758956 93.07413436625518 46.13494457357868 92.0397112357769 46.313293389178384 90.94286601983873C46.50947708633805 92.08429843967683 46.69674334271774 93.13655645171507 46.937514243777336 94.06397029283352L48.87259889303411 101.40302405476127H51.60133577170956L55.19506440604356 88.11603729258344H52.62684146140784L50.905775390870716 95.18756783111165C50.62933472669118 96.38250489562965 50.38856382563158 97.7379558941874 50.16562780613195 99.03990224806522C49.92485690507235 97.7379558941874 49.67516856323277 96.38250489562965 49.380893017493264 95.18756783111165L47.58848742071625 88.11603729258344H45.064851679980464L43.263528642423466 95.18756783111165C42.960335655903975 96.39142233640963 42.71956475484438 97.76470821652735 42.47879385378478 99.08448945196514C42.25585783428515 97.76470821652735 42.024004374005536 96.39142233640963 41.747563709826 95.18756783111165L40.01758019850889 88.11603729258344H37.458274694653156Z M62.80861182111868 101.40302405476127H65.23415571327463V94.80411787757228C65.23415571327463 94.06397029283352 65.15389874625477 92.66393209037585 65.06472433845492 91.0231229868586C65.95646841645343 92.75310649817571 66.45584510013259 93.69835522085413 67.15140548097143 94.81303531835228L71.29801544366453 101.40302405476127H74.00000000000001V88.11603729258344H71.58337354862404V95.08947598253181C71.58337354862404 95.90096309351046 71.63687819330396 97.24749665128822 71.7260526011038 98.53160812360606C71.14641895040477 97.20290944738828 70.56678529970574 96.19523863924996 70.09416093836653 95.43725617295124L65.5016789366742 88.11603729258344H62.80861182111868Z" fill="#15181D"/></g></svg></span></button></h1>
-      <span class="where" id="where"></span>
-    </div>
+  <header class="topbar">
+    <span class="topbar-logo" aria-hidden="true"><svg viewBox="0 0 314.36 74.00"><g transform="translate(8,8)"><rect x="0.800" y="4.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="20.800" y="4.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="40.800" y="4.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="60.000" y="0.000" width="18.000" height="18.000" fill="#A8752A"/><rect x="0.800" y="24.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="20.800" y="24.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="40.800" y="24.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="60.800" y="24.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="0.800" y="44.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="20.800" y="44.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="40.800" y="44.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><rect x="60.800" y="44.800" width="12.400" height="12.400" fill="none" stroke="#15181D" stroke-width="1.600"/><path d="M108.642578125 37.48296875C112.5244140625 37.48296875 115.41015625 34.406796875 115.41015625 29.030820312499998C115.41015625 23.581601562499998 112.4365234375 20.607968749999998 108.6572265625 20.607968749999998C105.7421875 20.607968749999998 104.541015625 22.365781249999998 103.9697265625 23.523007812499998H103.80859375V15.363828124999998H100.0V37.19H103.720703125V34.5972265625H103.9697265625C104.5556640625 35.78375 105.830078125 37.48296875 108.642578125 37.48296875ZM107.6171875 34.348203125C105.126953125 34.348203125 103.7353515625 32.20953125 103.7353515625 29.016171874999998C103.7353515625 25.822812499999998 105.09765625 23.742734374999998 107.6171875 23.742734374999998C110.1953125 23.742734374999998 111.4990234375 25.969296874999998 111.4990234375 29.016171874999998C111.4990234375 32.09234375 110.166015625 34.348203125 107.6171875 34.348203125Z" fill="#15181D"/><path d="M125.65703125 37.5269140625C129.3044921875 37.5269140625 131.8533203125 35.78375 132.6443359375 33.1323828125L129.143359375 32.414609375C128.6306640625 33.8062109375 127.3708984375 34.5386328125 125.7009765625 34.5386328125C123.2546875 34.5386328125 121.5994140625 32.9858984375 121.496875 30.070859374999998H132.893359375V28.869687499999998C132.893359375 23.127499999999998 129.40703125 20.607968749999998 125.4080078125 20.607968749999998C120.7205078125 20.607968749999998 117.7029296875 24.064999999999998 117.7029296875 29.104062499999998C117.7029296875 34.231015625 120.7205078125 37.5269140625 125.65703125 37.5269140625ZM121.5115234375 27.478085937499998C121.6873046875 25.295468749999998 123.0935546875 23.596249999999998 125.42265625 23.596249999999998C127.6931640625 23.596249999999998 128.967578125 25.134335937499998 129.1873046875 27.478085937499998Z" fill="#15181D"/><path d="M139.6685546875 15.363828124999998H135.8599609375V37.19H139.6685546875Z" fill="#15181D"/><path d="M150.516015625 37.5269140625C155.29140625 37.5269140625 158.3529296875 34.1284765625 158.3529296875 29.089414062499998C158.3529296875 23.991757812499998 155.29140625 20.607968749999998 150.516015625 20.607968749999998C145.740625 20.607968749999998 142.69375 23.991757812499998 142.69375 29.089414062499998C142.69375 34.1284765625 145.740625 37.5269140625 150.516015625 37.5269140625ZM150.516015625 34.43609375C147.8646484375 34.43609375 146.5755859375 32.063046875 146.5755859375 29.074765624999998C146.5755859375 26.057187499999998 147.8646484375 23.698789062499998 150.516015625 23.698789062499998C153.18203125 23.698789062499998 154.4857421875 26.057187499999998 154.4857421875 29.074765624999998C154.4857421875 32.063046875 153.18203125 34.43609375 150.516015625 34.43609375Z" fill="#15181D"/><path d="M166.0216796875 37.19H170.284375L176.407421875 20.813046874999998H172.364453125L169.3908203125 29.719296874999998C168.907421875 31.169492187499998 168.555859375 32.6343359375 168.204296875 34.113828125C167.8380859375 32.6196875 167.471875 31.169492187499998 166.9884765625 29.719296874999998L164.0001953125 20.813046874999998H159.9279296875Z" fill="#15181D"/><path d="M185.921875 37.5269140625C189.5693359375 37.5269140625 192.1181640625 35.78375 192.9091796875 33.1323828125L189.408203125 32.414609375C188.8955078125 33.8062109375 187.6357421875 34.5386328125 185.9658203125 34.5386328125C183.51953125 34.5386328125 181.8642578125 32.9858984375 181.76171875 30.070859374999998H193.158203125V28.869687499999998C193.158203125 23.127499999999998 189.671875 20.607968749999998 185.6728515625 20.607968749999998C180.9853515625 20.607968749999998 177.9677734375 24.064999999999998 177.9677734375 29.104062499999998C177.9677734375 34.231015625 180.9853515625 37.5269140625 185.921875 37.5269140625ZM181.7763671875 27.478085937499998C181.9521484375 25.295468749999998 183.3583984375 23.596249999999998 185.6875 23.596249999999998C187.9580078125 23.596249999999998 189.232421875 25.134335937499998 189.4521484375 27.478085937499998Z" fill="#15181D"/><path d="M202.1599609375 37.48296875C204.987109375 37.48296875 206.246875 35.78375 206.8474609375 34.5972265625H207.0818359375V37.19H210.8171875V15.363828124999998H207.00859375V23.523007812499998H206.8474609375C206.2615234375 22.365781249999998 205.0603515625 20.607968749999998 202.1453125 20.607968749999998C198.366015625 20.607968749999998 195.40703125 23.581601562499998 195.40703125 29.030820312499998C195.40703125 34.406796875 198.278125 37.48296875 202.1599609375 37.48296875ZM203.2 34.348203125C200.651171875 34.348203125 199.303515625 32.09234375 199.303515625 29.016171874999998C199.303515625 25.969296874999998 200.621875 23.742734374999998 203.2 23.742734374999998C205.7048828125 23.742734374999998 207.0818359375 25.822812499999998 207.0818359375 29.016171874999998C207.0818359375 32.20953125 205.6755859375 34.348203125 203.2 34.348203125Z" fill="#15181D"/><path d="M217.2994140625 37.4390234375C218.6177734375 37.4390234375 219.6578125 36.4136328125 219.6578125 35.0952734375C219.6578125 33.7915625 218.6177734375 32.766171875 217.2994140625 32.766171875C215.9810546875 32.766171875 214.9556640625 33.7915625 214.9556640625 35.0952734375C214.9556640625 36.4136328125 215.9810546875 37.4390234375 217.2994140625 37.4390234375Z" fill="#15181D"/><path d="M223.81093750000002 43.313046875H227.61953125000002V34.5972265625H227.78066406250002C228.36660156250002 35.78375 229.64101562500002 37.48296875 232.45351562500002 37.48296875C236.33535156250002 37.48296875 239.22109375000002 34.406796875 239.22109375000002 29.030820312499998C239.22109375000002 23.581601562499998 236.24746093750002 20.607968749999998 232.46816406250002 20.607968749999998C229.55312500000002 20.607968749999998 228.35195312500002 22.365781249999998 227.78066406250002 23.523007812499998H227.53164062500002V20.813046874999998H223.81093750000002ZM231.42812500000002 34.348203125C228.93789062500002 34.348203125 227.54628906250002 32.20953125 227.54628906250002 29.016171874999998C227.54628906250002 25.822812499999998 228.90859375000002 23.742734374999998 231.42812500000002 23.742734374999998C234.00625000000002 23.742734374999998 235.30996093750002 25.969296874999998 235.30996093750002 29.016171874999998C235.30996093750002 32.09234375 233.97695312500002 34.348203125 231.42812500000002 34.348203125Z" fill="#15181D"/><path d="M246.040234375 15.363828124999998H242.231640625V37.19H246.040234375Z" fill="#15181D"/><path d="M254.353515625 37.5269140625C256.90234375 37.5269140625 258.455078125 36.340390625 259.1728515625 34.934140625H259.3193359375V37.19H262.966796875V26.247617187499998C262.966796875 21.882382812499998 259.36328125 20.607968749999998 256.287109375 20.607968749999998C253.005859375 20.607968749999998 250.310546875 21.999570312499998 249.34375 24.885312499999998L252.8740234375 25.603085937499998C253.26953125 24.519101562499998 254.3974609375 23.537656249999998 256.3017578125 23.537656249999998C258.162109375 23.537656249999998 259.158203125 24.475156249999998 259.158203125 26.071835937499998V26.145078124999998C259.158203125 27.273007812499998 257.95703125 27.316953124999998 255.115234375 27.624570312499998C251.951171875 27.961484374999998 248.875 28.898984374999998 248.875 32.590390625C248.875 35.813046875 251.2333984375 37.5269140625 254.353515625 37.5269140625ZM255.3349609375 34.699765625C253.7236328125 34.699765625 252.56640625 33.96734375 252.56640625 32.5464453125C252.56640625 31.052304687499998 253.85546875 30.422421874999998 255.5693359375 30.188046874999998C256.55078125 30.056210937499998 258.6748046875 29.792539062499998 259.1875 29.382382812499998V31.315976562499998C259.1875 33.1323828125 257.6787109375 34.699765625 255.3349609375 34.699765625Z" fill="#15181D"/><path d="M273.8142578125 37.5269140625C277.491015625 37.5269140625 280.215625 35.5347265625 280.91875 32.268125L277.3591796875 31.521054687499998C276.963671875 33.293515625 275.7185546875 34.43609375 273.8435546875 34.43609375C271.1921875 34.43609375 269.873828125 32.1069921875 269.873828125 29.074765624999998C269.873828125 26.013242187499998 271.1921875 23.698789062499998 273.8435546875 23.698789062499998C275.6892578125 23.698789062499998 276.905078125 24.797421874999998 277.315234375 26.496640624999998L280.8748046875 25.749570312499998C280.1716796875 22.556210937499998 277.46171875 20.607968749999998 273.8142578125 20.607968749999998C269.0388671875 20.607968749999998 265.9919921875 23.991757812499998 265.9919921875 29.089414062499998C265.9919921875 34.1284765625 269.0388671875 37.5269140625 273.8142578125 37.5269140625Z" fill="#15181D"/><path d="M291.1216796875 37.5269140625C294.769140625 37.5269140625 297.31796875 35.78375 298.108984375 33.1323828125L294.6080078125 32.414609375C294.0953125 33.8062109375 292.835546875 34.5386328125 291.165625 34.5386328125C288.7193359375 34.5386328125 287.0640625 32.9858984375 286.9615234375 30.070859374999998H298.3580078125V28.869687499999998C298.3580078125 23.127499999999998 294.8716796875 20.607968749999998 290.87265625 20.607968749999998C286.18515625 20.607968749999998 283.167578125 24.064999999999998 283.167578125 29.104062499999998C283.167578125 34.231015625 286.18515625 37.5269140625 291.1216796875 37.5269140625ZM286.976171875 27.478085937499998C287.151953125 25.295468749999998 288.558203125 23.596249999999998 290.8873046875 23.596249999999998C293.1578125 23.596249999999998 294.4322265625 25.134335937499998 294.651953125 27.478085937499998Z" fill="#15181D"/></g></svg></span>
+    <button type="button" class="topbar-menu" id="openSettings" aria-label="Menü">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+    </button>
   </header>
+  <div class="wherebar"><span class="where" id="where"></span></div>
 
   <section class="community-panel community-invite" id="communityInvite" hidden>
     <div class="invite-head">
       <span class="community-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.4" r="2.7"/><path d="M7.5 19.2c0-2.6 2-4.5 4.5-4.5s4.5 1.9 4.5 4.5"/><circle cx="5.3" cy="9.9" r="2"/><path d="M2.1 18.6c0-2 1.4-3.5 3.4-3.5"/><circle cx="18.7" cy="9.9" r="2"/><path d="M21.9 18.6c0-2-1.4-3.5-3.4-3.5"/></svg></span>
-      <div class="invite-text"><h2>Best in Town</h2><p class="invite-sub">Deine Stadt erkunden –<br>Dein Wissen teilen</p></div>
+      <div class="invite-text"><h2>beloved.place</h2><p class="invite-sub">Deine Stadt erkunden –<br>Dein Wissen teilen</p></div>
       <button type="button" class="invite-cta" id="inviteJoin">Mitmachen</button>
       <button type="button" class="invite-cta" id="inviteCancel" hidden>Abbrechen</button>
     </div>
@@ -1442,34 +1484,32 @@ function cityShort(c) { return c.name.split(" & "); }
 function renderWhere() {
   const el = $("where"); if (!el) return;
   const c = curCity();
-  el.innerHTML = `<button type="button" class="plate where-btn" id="whereBtn" aria-haspopup="false">
-    <span class="sr">Stadt wählen: </span><span class="where-face"><span><b>${esc(c.name)}</b></span></span></button>`;
-}
-
-// Die Stadtwahl ist eine eigene Ansicht im Baum — kein Fenster über dem Inhalt.
-function renderCityView() {
-  const c = curCity();
-  const rows = CITIES.filter(x => !x.hidden).map(x => {
-    const on = x.id === state.city;
-    const land = x.country && x.country !== "Deutschland" ? esc(x.country) : "";
-    return `<li><button type="button" class="cv-row${on ? " on" : ""}" data-city-pick="${esc(x.id)}">
-      <span class="cv-name">${esc(x.name)}</span>${land ? `<span class="cv-land">${land}</span>` : ""}
-      ${on ? '<span class="cv-on">Aktuell</span>' : ""}</button></li>`;
-  }).join("");
-  return `<button type="button" class="back-btn" data-city-back aria-label="Zurück">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4.6"/><path d="M11 5.6L4.6 12 11 18.4"/></svg>
-      <span>${esc(c.name)}</span></button>
-    <h1 class="disc-h">Stadt wählen</h1>
-    <ul class="cv-list">${rows}</ul>`;
+  let html = `<span class="where-bar"><button type="button" class="plate where-btn" id="whereBtn" aria-haspopup="true" aria-expanded="${state.whereOpen ? "true" : "false"}">
+    <span class="sr">Stadt wählen: </span><span class="where-face"><span><b>${esc(c.name)}</b></span></span></button></span>`;
+  if (state.whereOpen) {
+    // Klappt direkt unter der Stadt auf und legt sich über den Inhalt.
+    const rows = CITIES.filter(x => !x.hidden).map(x => {
+      const on = x.id === state.city;
+      const land = x.country && x.country !== "Deutschland" ? esc(x.country) : "";
+      return `<li><button type="button" class="dp${on ? " on" : ""}" data-pick="${esc(x.id)}">
+        <span class="dp-n">${esc(x.name)}</span>${land ? `<span class="dp-land">${land}</span>` : ""}
+        ${on ? '<span class="dp-on">Aktuell</span>' : ""}</button></li>`;
+    }).join("");
+    html += `<div class="drop" role="menu"><ul>${rows}</ul></div>`;
+  }
+  el.innerHTML = html;
 }
 
 function setWhere(city, kiez) {
   if (!CITY[city]) city = "berlin";
+  const gewechselt = city !== state.city;
   if (city !== state.city) {
     state.city = city; saveCity(city);
     const f = $("placeForm"); if (f) f.remove();
     state.form = null; state.confirmDelete = null; state.pateForm = null;
   }
+  // Ein Stadtwechsel führt immer auf die Übersicht der neuen Stadt.
+  if (gewechselt) { state.tab = "discover"; state.placeView = null; state.group = null; state.areaFilter = ""; state.near = null; state.query = ""; }
   state.kiez = kiez || ""; saveKiez(state.kiez);
   state.group = "";
   normalizeWhere();
@@ -1799,7 +1839,7 @@ function render() {
   if (!$("settings").hidden) renderSettings();
   const cat = currentCat();
   if (cat) renderCategory(CATS[cat]); else renderHome();
-  renderHomebar(!cat && !state.cityView);
+  renderHomebar(!cat);
   renderCuratedMap();
   hydratePhotos(document); hydrateAvatars(document);
   // Patenbilder einmal in den lokalen Zwischenspeicher holen; beim nächsten
@@ -1940,7 +1980,7 @@ const SHARE_QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAJYAQMAAACE
 function shareTextFor(key) {
   if (key === "eo") {
     const pr = eoPair(); if (!pr) return null;
-    return { title: "Entweder – oder", text: `Heute bei Entweder – oder: ${pr.a.name} oder ${pr.b.name}?\nWas ist es eher wert? Stimm ab bei Best in Town:` };
+    return { title: "Entweder – oder", text: `Heute bei Entweder – oder: ${pr.a.name} oder ${pr.b.name}?\nWas ist es eher wert? Stimm ab bei beloved.place:` };
   }
   const p = state.places.find(x => x.id === key); if (!p) return null;
   const cat = CATS[p.category], rank = eoRanked(p.category).findIndex(x => x.id === p.id) + 1;
@@ -1949,7 +1989,7 @@ function shareTextFor(key) {
     `${p.name}${kiezOf(p) ? " · " + kiezOf(p) : ""}`,
     `${rank ? "Platz " + rank + " · " : ""}${cat ? cat.name : ""} · ${CITY[cityOf(p)] ? CITY[cityOf(p)].name : ""}`,
     x ? (x.quote ? `„${x.text}“` : x.text) : "",
-    pate ? `Ausgewählt von ${pate.name} – Best in Town:` : "Best in Town – die Orte, die es wert sind:"
+    pate ? `Ausgewählt von ${pate.name} – beloved.place:` : "beloved.place – die Orte, die es wert sind:"
   ].filter(Boolean);
   return { title: p.name, text: lines.join("\n") };
 }
@@ -2180,7 +2220,7 @@ document.addEventListener("click", e => {
 async function shareSaved() {
   const list = savedPlaces();
   if (!list.length) return;
-  const text = "Meine Lieblingsorte in Best in Town:\n" + list.map(p => "· " + p.name + " (" + areaNameOf(p) + ")").join("\n");
+  const text = "Meine Lieblingsorte auf beloved.place:\n" + list.map(p => "· " + p.name + " (" + areaNameOf(p) + ")").join("\n");
   try {
     if (navigator.share) { await navigator.share({ title: "Meine Orte", text }); return; }
     await navigator.clipboard.writeText(text);
@@ -2219,12 +2259,10 @@ document.addEventListener("click", e => {
     return;
   }
 });
-// Stadtwahl: Zeile wählen oder zurück.
+// Stadtwahl: aufklappen, Stadt wählen.
 document.addEventListener("click", e => {
-  const pick = e.target.closest && e.target.closest("[data-city-pick]");
-  if (pick) { state.cityView = false; state.near = null; setWhere(pick.dataset.cityPick, ""); window.scrollTo(0, 0); return; }
-  const back = e.target.closest && e.target.closest("[data-city-back]");
-  if (back) { state.cityView = false; render(); window.scrollTo(0, 0); return; }
+  const pick = e.target.closest && e.target.closest("[data-pick]");
+  if (pick) { state.near = null; setWhere(pick.dataset.pick, ""); window.scrollTo(0, 0); return; }
 });
 // Gebiet: zurück zur Stadt, Rubrikfilter, Ort öffnen.
 document.addEventListener("click", e => {
@@ -3165,14 +3203,14 @@ async function shareCollageInner() {
   if (!blob) { toast("Collage hat nicht geklappt."); return; }
   if (window.BestMobile && window.BestMobile.shareImage) {
     try {
-      await window.BestMobile.shareImage({ filename: "best-in-town-collage.jpg", data: blob, title: "Meine Orte", text: "Meine Lieblingsorte in Best in Town" });
+      await window.BestMobile.shareImage({ filename: "beloved-place-collage.jpg", data: blob, title: "Meine Orte", text: "Meine Lieblingsorte auf beloved.place" });
       return;
     } catch (e) { /* Fallback unten */ }
   }
   try {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "best-in-town-collage.jpg";
+    a.download = "beloved-place-collage.jpg";
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     toast("Collage gespeichert.");
@@ -3274,8 +3312,7 @@ function renderHome() {
   // Bei aktiver Suche nur die Treffer: kein Spiel, kein Pate, keine Vorschläge.
   // Drei Ebenen, drei Aufgaben: Stadt = Krone, Ort = Tagesfrage.
   // Stadtweit nie ein Duell — auch nicht bei Gleichstand an der Spitze.
-  let html = state.cityView ? renderCityView()
-    : placeMode ? renderPlaceView(state.placeView)
+  let html = placeMode ? renderPlaceView(state.placeView)
     : savedMode ? renderSaved()
     : discMode ? renderDiscover()
     : (areaMode ? renderArea() : (filtering ? "" : (state.kiez ? eoBlock(eoGroupToday()) : "")));
@@ -3867,7 +3904,7 @@ function voteBlock(p) {
   const myVisits = mine && dayKey(visitsOf(mine)[visitsOf(mine).length - 1].at) !== dayKey(Date.now()) ? visitsOf(mine).length : 0;
   const myLine = mine ? `<p class="visit-mine">Du warst ${visitsOf(mine).length}× hier${myVisits ? ", zuletzt " + agoText(visitsOf(mine)[visitsOf(mine).length - 1].at) : ""}.</p>` : "";
   const notAllowed = !state.canVote ? `<div class="note" style="grid-column:1/-1">Abstimmen ist für dein Konto gerade nicht freigeschaltet.</div>` : "";
-  return `<div class="vote" role="group" aria-label="Best in Town?"><span class="vote-q">Best in Town?</span>${btns}</div>${myLine}${mineTxt}${extra}${notAllowed}`;
+  return `<div class="vote" role="group" aria-label="Ein Lieblingsort?"><span class="vote-q">Ein Lieblingsort?</span>${btns}</div>${myLine}${mineTxt}${extra}${notAllowed}`;
 }
 
 // Link aus einem Vorschlag: Google Maps oder Webseite. Liefert, wenn möglich, einen Namensvorschlag.
@@ -3942,13 +3979,13 @@ function openVisitSheet(id) {
   closeVisit();
   const el = document.createElement("div");
   el.className = "share-sheet"; el.id = "visitSheet";
-  // Die Bewertung ist die Marke selbst: „Best in Town?" — ja, nein, vielleicht
+  // Die Bewertung fragt nach dem Lieblingsort: „Ein Lieblingsort?" — ja, nein, vielleicht
   // ist die feste Redewendung, nicht die Rampe. Die Werte dahinter bleiben
   // unverändert (joy = 1, ok = 0,5, no = 0), deshalb keine Datenmigration.
   const ORDER = ["joy", "no", "ok"], LABEL = { joy: "Ja", no: "Nein", ok: "Vielleicht" };
-  el.innerHTML = `<div class="ss-card" role="dialog" aria-label="Best in Town?">
-    <p class="ss-title">Best in Town?</p>
-    <div class="vote" role="group" aria-label="Best in Town?" style="margin:2px 0 4px;grid-template-columns:repeat(3,1fr)">
+  el.innerHTML = `<div class="ss-card" role="dialog" aria-label="Ein Lieblingsort?">
+    <p class="ss-title">Ein Lieblingsort?</p>
+    <div class="vote" role="group" aria-label="Ein Lieblingsort?" style="margin:2px 0 4px;grid-template-columns:repeat(3,1fr)">
       ${ORDER.map(k => `<button class="vote-btn" data-visit="${k}">${LABEL[k]}</button>`).join("")}
     </div>
     <label class="ss-reason"><span>Begründung <i>freiwillig</i></span>
@@ -4082,7 +4119,7 @@ function upDuelBlock(cat, precomputed) {
     </div>
   </section>`;
 }
-// Best in Town: die eine Location der Stadt, unabhängig von der Rubrik.
+// beloved.place: die eine Location der Stadt, unabhängig von der Rubrik.
 // Kandidat ist jeder Ort der Stadt; entschieden wird über die Punkte.
 function bestInTown() {
   const all = state.places.filter(p => cityOf(p) === state.city);
@@ -4159,7 +4196,7 @@ function renderCategory(cat) {
     </div>`;
   } else if (cityView) {
     // Gesamtstadt: kein Duell, keine gemischte Rangliste. Oben der Ort mit den
-    // meisten Punkten — DAS ist Best in Town. Darunter die Ortsteile mit ihrem
+    // meisten Punkten — DAS ist der Lieblingsort der Stadt. Darunter die Ortsteile mit ihrem
     // jeweiligen Ersten; ein Tipp führt hinein.
     // Kurz und schlicht: die Rubrik zeigt ihre Rangliste. Welcher Stadtteil
     // gemeint ist, wählt man oben in der Ortswahl — nicht in einer zweiten Liste.
@@ -5502,7 +5539,7 @@ function zipStore(files) {
 const EXPORT_COLLECTIONS = ["places", "votes", "paten", "trusted", "suggestions", "duels", "duelvotes"];
 const IMG_EXT = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif", "image/svg+xml": ".svg", "image/avif": ".avif" };
 function exportReadme(info) {
-  return `Best in Town – Datenexport
+  return `beloved.place – Datenexport
 Stand: ${info.at}
 Herkunft: ${info.source}
 
@@ -5669,7 +5706,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.212";
+const APP_VERSION = "1.1.0";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
@@ -5960,12 +5997,15 @@ window.addEventListener("scroll", () => { if (!currentCat()) state.homeScroll = 
 $("where").addEventListener("click", e => {
   e.stopPropagation();
   const btn = e.target.closest("button"); if (!btn) return;
-  if (btn.id === "whereBtn") { state.cityView = true; state.whereOpen = false; render(); window.scrollTo(0, 0); return; }
-  if (btn.dataset.pick) { state.near = null; state.whereOpen = false; setWhere(btn.dataset.pick, btn.dataset.kiez); return; }
+  if (btn.id === "whereBtn") { state.whereOpen = !state.whereOpen; renderWhere(); return; }
+  if (btn.dataset.pick) { state.whereOpen = false; state.near = null; setWhere(btn.dataset.pick, ""); window.scrollTo(0, 0); return; }
 });
 
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && state.cityView) { state.cityView = false; render(); const b = $("whereBtn"); if (b) b.focus(); }
+  if (e.key === "Escape" && state.whereOpen) { state.whereOpen = false; renderWhere(); const b = $("whereBtn"); if (b) b.focus(); }
+});
+document.addEventListener("click", e => {
+  if (state.whereOpen && !e.target.closest("#where")) { state.whereOpen = false; renderWhere(); }
 });
 window.addEventListener("hashchange", () => {
   const f = $("placeForm"); if (f) f.remove();
