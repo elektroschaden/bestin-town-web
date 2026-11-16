@@ -56,7 +56,7 @@ body { margin: 0;
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 0 48px;
 }
-.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 14px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
 h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
@@ -966,7 +966,7 @@ body.boot-reveal .ranking > li { animation: none !important; }
 .disc-sub span { display:block; }
 .disc-count { font-variant-numeric: tabular-nums; }
 .disc-say { margin-top:3px; font-size:0.8125rem; }
-.disc-list { margin-top:10px; }
+.disc-list { margin-top:14px; }
 .disc-row { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
   width:100%; padding:14px 0; border:0; border-top:1px solid var(--line); background:none;
   font:inherit; color:inherit; text-align:left; cursor:pointer; }
@@ -1088,17 +1088,17 @@ body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 
 /* ---------- Kopfzeile: Logo links, drei Punkte rechts ---------- */
 .topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between;
   gap: 12px; box-sizing: border-box; width: 100vw; margin-left: calc(50% - 50vw);
-  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-left, 0px)) 4px;
+  padding: env(safe-area-inset-top, 0px) max(16px, calc(50vw - 320px)) 4px;
   background: var(--paper); border-bottom: 1px solid var(--line); }
 .topbar-logo { display: block; }
 .topbar-logo svg { display: block; height: 46px; width: auto; }
-.topbar-menu { display: grid; place-items: center; width: 44px; height: 44px; margin-right: -8px;
+.topbar-menu { display: grid; place-items: center; width: 44px; height: 44px; margin-right: 0;
   border: 0; border-radius: 99px; background: none; color: var(--ink); cursor: pointer; }
 .topbar-menu svg { width: 21px; height: 21px; }
 .topbar-menu:active { background: rgba(21,38,31,.07); }
 
 /* ---------- Stadt + Aufklappliste ---------- */
-.wherebar { position: relative; margin-top: -4px; width: 100%; }
+.wherebar { position: relative; margin-top: 6px; width: 100%; }
 .wherebar .where { display: block; position: static; width: 100%; }
 .where-bar { display: flex; }
 .drop { position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%);
@@ -1118,7 +1118,7 @@ body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 
 .area-h, .disc-h, .sv-h { margin-top: 2px; }
 .area-region { margin-top: 6px; }
 .area-sub, .disc-sub, .sv-sub { margin-top: 4px; }
-.disc-list, .sv-grid { margin-top: 10px; }
+.disc-list, .sv-grid { margin-top: 14px; }
 .pv-photo { margin-top: 8px; }
 .pv-kat { margin-top: 10px; }
 .pv-name { margin-top: 2px; }
@@ -1130,12 +1130,13 @@ body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 
 .plate, .where-btn { border: 0 !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
   padding: 0 !important; font-weight: 400; }
 .where-btn { display: inline-flex; align-items: center; gap: 12px; margin: 0; }
-.where-face b { font-family: var(--font-display); font-size:1.875rem; line-height: 1.1; font-weight: 400; }
+.where-face b { font-family: var(--font-display); font-size:1.5rem; line-height: 1.15; font-weight: 400; }
 .where-face::after { border-top-width: 7px; border-left-width: 6px; border-right-width: 6px; }
 /* Auf breiten Fenstern steht der Kopf auf derselben Flucht wie der Inhalt. */
-@media (min-width: 700px) {
-  .topbar { padding-left: calc(50% - 320px); padding-right: calc(50% - 320px); }
-}
+.disc-row { padding-top: 13px; padding-bottom: 13px; }
+.area-item { padding-top: 13px; padding-bottom: 13px; }
+.disc-h, .area-h, .sv-h { margin-top: 6px; }
+.disc-sub, .area-sub, .sv-sub { margin-top: 6px; }
 </style>
   </div>
 </div>
@@ -2805,8 +2806,10 @@ function renderDiscover() {
       <p>${state.canEdit ? "Trag den ersten Ort ein — dann steht hier das Gebiet." : "Die Paten sammeln gerade. Schau bald wieder vorbei."}</p></div>`;
   }
   const rows = areas.map(a => {
-    const thumbs = a.thumbs.length
-      ? a.thumbs.map(x => `<i><img src="${photoSrcOf(x)}" data-fallback="${esc(remotePhotoSrc(x))}" alt="" loading="lazy" draggable="false"></i>`).join("")
+    // Ein Bild statt drei: Die Zeile wird ruhiger, und jeder Ortsteil wiegt gleich viel.
+    const first = a.thumbs[0];
+    const thumbs = first
+      ? `<i><img src="${photoSrcOf(first)}" data-fallback="${esc(remotePhotoSrc(first))}" alt="" loading="lazy" draggable="false"></i>`
       : `<i>${esc(a.kiez.charAt(0).toUpperCase())}</i>`;
     return `<button type="button" class="disc-row" data-area="${esc(a.kiez)}">
       <span class="disc-thumbs" aria-hidden="true">${thumbs}</span>
@@ -5717,7 +5720,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.1.3";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
