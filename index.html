@@ -139,7 +139,7 @@ h1, h2, h3 { font-weight: 400; }
   padding: 0 8px; display: grid; place-items: center; color: var(--gold); }
 .eo2-cat .k-ico { width: 20px; height: 20px; color: var(--gold); }
 .eo2-label { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--deep); padding: 0 8px;
-  display: flex; align-items: baseline; gap: 8px; font-family: var(--font-display); font-size:1.0625rem; line-height: 20px; white-space: nowrap; }
+  display: flex; align-items: baseline; gap: 8px; font-family: var(--font-body); font-size:1.0625rem; line-height: 20px; white-space: nowrap; }
 .eo2-tag { font-size:0.8125rem; letter-spacing: .16em; color: var(--gold-light); }
 .eo2-pair { display: flex; align-items: center; justify-content: center; gap: 12px;
   font-family: var(--font-display); font-size: clamp(30px, 9.6vw, 38px); line-height: 1.1;
@@ -200,7 +200,7 @@ h1, h2, h3 { font-weight: 400; }
   background: var(--paper); border: 1px solid var(--line);
   border-radius: 16px; padding: 13px 12px;
   font: inherit; color: inherit; text-align: left; cursor: pointer; }
-.gtile b { position: relative; font-family: var(--font-display); font-weight: 400; font-size:1rem; line-height: 1.15; }
+.gtile b { position: relative; font-family: var(--font-body); font-weight: 400; font-size:1rem; line-height: 1.15; }
 .gtile small { position: relative; font-size:0.6875rem; color: var(--muted); }
 /* Das Symbol liegt als Wasserzeichen in der Ecke — groß, aber zurückgenommen. */
 .gtile .gwm { position: absolute; top: -10px; right: -8px; opacity: .13; color: var(--deep); pointer-events: none; }
@@ -225,7 +225,7 @@ h1, h2, h3 { font-weight: 400; }
 .k-row:hover .k-name { color: var(--deep); }
 .pate2 { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: center; padding: 16px 0 6px; }
 .pate-more { display: flex; align-items: center; gap: 6px; padding: 4px 0 10px 104px; flex-wrap: wrap; }
-.pate-more .pm { transform: translateZ(0); isolation: isolate; contain: paint; width: 30px; height: 30px; border-radius: 50%; border: 0; padding: 0; overflow: hidden; background: var(--deep); color: var(--gold-light); font: 15px var(--font-display); display: grid; place-items: center; cursor: pointer; box-shadow: 0 0 0 1.5px var(--paper); margin-left: -2px;
+.pate-more .pm { transform: translateZ(0); isolation: isolate; contain: paint; width: 30px; height: 30px; border-radius: 50%; border: 0; padding: 0; overflow: hidden; background: var(--deep); color: var(--gold-light); font: 15px var(--font-body); display: grid; place-items: center; cursor: pointer; box-shadow: 0 0 0 1.5px var(--paper); margin-left: -2px;
   clip-path: circle(50%); -webkit-clip-path: circle(50%); }
 .pate-more .pm img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pm-n, .pm-t { font-size:0.75rem; color: var(--muted); margin-left: 4px; }
@@ -249,7 +249,7 @@ body.has-homebar { padding-bottom: 110px; }
 .where-btn[aria-expanded="true"] .where-face::after { transform: rotate(180deg); }
 .where-face b { display: block; font-weight: 400; line-height: 1.1; min-width: 0; max-width: 100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.where-face small { display: inline; margin-left: .28em; font-family: var(--font-display); font-size: 1em; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--ink); line-height: 1.1; }
+.where-face small { display: inline; margin-left: .28em; font-family: var(--font-body); font-size: 1em; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--ink); line-height: 1.1; }
 .where-panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 60; width: min(320px, calc(100vw - 32px));
   max-height: min(70vh, 520px); overflow: auto; overscroll-behavior: contain; background: var(--surface); border: 1px solid var(--line);
   border-radius: 16px; padding: 6px; box-shadow: 0 18px 40px -18px rgba(21,38,31,.45); }
@@ -709,7 +709,7 @@ body.has-homebar { padding-bottom: 110px; }
 .drag-handle { cursor: grab; touch-action: none; font-size:1.125rem; line-height: 1; }
 .drag-handle:active { cursor: grabbing; }
 .rank {
-  float: left; width: 52px; margin: 0 16px 6px 0; font-family: var(--font-display); font-weight: 800; font-size:2.25rem; line-height: 1;
+  float: left; width: 52px; margin: 0 16px 6px 0; font-family: var(--font-body); font-weight: 800; font-size:2.25rem; line-height: 1;
   color: var(--deep); font-variant-numeric: tabular-nums; text-align: center;
 }
 .place.is-first .rank { color: var(--deep); background: var(--sign); border-radius: 50%; width: 50px; height: 50px; display: grid; place-items: center; font-size:1.625rem; }
@@ -725,7 +725,7 @@ body.has-homebar { padding-bottom: 110px; }
   line-height: 1.5; text-transform: uppercase; color: rgba(21,38,31,.60); }
 .place.is-first .place-kiez { color: rgba(246,241,231,.80); }
 .place-side { display: grid; justify-items: end; gap: 8px; }
-.price { font-family: var(--font-display); font-weight: 800; font-size:1.25rem; letter-spacing: .04em; color: var(--deep); white-space: nowrap; }
+.price { font-family: var(--font-body); font-weight: 800; font-size:1.25rem; letter-spacing: .04em; color: var(--deep); white-space: nowrap; }
 .price .dim { color: var(--line); }
 .place.is-open { box-shadow: 0 2px 4px rgba(21,38,31,.06), 0 14px 30px -16px rgba(21,38,31,.45); }
 .kiez-name { color: var(--muted); }
@@ -737,12 +737,12 @@ body.has-homebar { padding-bottom: 110px; }
 .rank-photo { position: relative; width: 52px; height: 52px; border-radius: 12px; overflow: hidden; background: var(--sign-soft); flex: none; }
 .rank-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rank-photo span { position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--deep); color: var(--gold-light); font-family: var(--font-display); font-weight: 800; font-size:0.75rem; }
+  background: var(--deep); color: var(--gold-light); font-family: var(--font-body); font-weight: 800; font-size:0.75rem; }
 .comments.owner li { flex-wrap: wrap; gap: 6px 8px; align-items: center; }
 .comments.owner .btn { padding: 4px 10px; font-size:0.8125rem; }
 .place h3 { font-size:1.25rem; font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .meta { font-size:0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.score { font-family: var(--font-display); font-weight: 700; font-size:1.125rem; color: var(--ink); }
+.score { font-family: var(--font-body); font-weight: 700; font-size:1.125rem; color: var(--ink); }
 .score small { font-family: var(--font-body); font-weight: 600; font-size:0.8125rem; color: var(--muted); }
 .reason { margin: 2px 0 0; max-width: 65ch; font-size:0.875rem; color: var(--muted); }
 .badge { font-family: var(--font-body); font-size:0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
@@ -750,7 +750,7 @@ body.has-homebar { padding-bottom: 110px; }
 
 /* Abstimmen: drei gleich breite Knöpfe, Text mittig. */
 .vote { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; max-width: 480px; }
-.vote-q { grid-column: 1 / -1; font-family: var(--font-display); font-weight: 700; font-size:0.9375rem; color: var(--ink); }
+.vote-q { grid-column: 1 / -1; font-family: var(--font-body); font-weight: 700; font-size:0.9375rem; color: var(--ink); }
 .vote-btn {
   border: 1px solid var(--line); background: var(--paper); padding: 8px 14px; border-radius: 99px;
   cursor: pointer; font-size:0.875rem; font-weight: 600;
@@ -863,7 +863,7 @@ a.chip { text-decoration: none; color: var(--ink); }
 .pate { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center;
   background: var(--surface); border: 1px solid var(--line); border-left: 4px solid #E0C27A; border-radius: var(--r); padding: 12px 16px; }
 .pate-mark { grid-row: span 2; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
-  background: #F6E7BE; color: #7A5A16; font-family: var(--font-display); font-weight: 800; font-size:1.125rem; }
+  background: #F6E7BE; color: #7A5A16; font-family: var(--font-body); font-weight: 800; font-size:1.125rem; }
 /* Some WebViews (observed on Android) fail to clip an absolutely positioned child image to a
    border-radius + overflow:hidden circle when the child is larger than its container. clip-path
    is a second, independent clipping mechanism that is not affected by that bug, so it is added
@@ -879,7 +879,7 @@ a.chip { text-decoration: none; color: var(--ink); }
   clip-path: circle(50%); -webkit-clip-path: circle(50%); box-shadow: 0 0 0 1.5px var(--gold); }
 .pate-photo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pate-role { font-size:0.75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.pate-name { font-family: var(--font-display); font-weight: 700; font-size:1.125rem; }
+.pate-name { font-family: var(--font-body); font-weight: 700; font-size:1.125rem; }
 .pate-note { grid-column: 2; margin: 0; font-size:0.875rem; color: var(--muted); }
 .paten-admin { display: grid; gap: 10px; }
 .paten-admin h2 { font-size:1.375rem; font-weight: 700; }
@@ -1084,7 +1084,7 @@ body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 
 <div class="wrap">
   <header class="mast">
     <div class="brand">
-      <h1><button type="button" class="wordmark" id="openSettings" aria-label="Einstellungen"><span class="marke" aria-hidden="true"><svg viewBox="8 7.2 74 54"><g fill="none" stroke="#15181D" stroke-width="1.6"><rect x="8.8" y="8.8" width="12.4" height="12.4"/><rect x="28.8" y="8.8" width="12.4" height="12.4"/><rect x="48.8" y="8.8" width="12.4" height="12.4"/><rect x="8.8" y="28.8" width="12.4" height="12.4"/><rect x="28.8" y="28.8" width="12.4" height="12.4"/><rect x="48.8" y="28.8" width="12.4" height="12.4"/><rect x="8.8" y="48.8" width="12.4" height="12.4"/><rect x="28.8" y="48.8" width="12.4" height="12.4"/><rect x="48.8" y="48.8" width="12.4" height="12.4"/><rect x="68.8" y="28.8" width="12.4" height="12.4"/><rect x="68.8" y="48.8" width="12.4" height="12.4"/></g><rect x="68" y="8" width="14" height="14" fill="#A8752A"/></svg></span><span class="wortmarke" aria-hidden="true"><span class="wortmarke-text">Best</span><span class="wortmarke-text">in</span><span class="wortmarke-text">Town</span></span></button></h1>
+      <h1><button type="button" class="wordmark" id="openSettings" aria-label="Einstellungen"><span class="marke" aria-hidden="true"><svg viewBox="7.2 7.2 80.4 59"><g fill="none" stroke="#15181D" stroke-width="1.6"><rect x="8.8" y="12.8" width="12.4" height="12.4"/><rect x="28.8" y="12.8" width="12.4" height="12.4"/><rect x="48.8" y="12.8" width="12.4" height="12.4"/><rect x="68.8" y="12.8" width="12.4" height="12.4"/><rect x="8.8" y="32.8" width="12.4" height="12.4"/><rect x="28.8" y="32.8" width="12.4" height="12.4"/><rect x="48.8" y="32.8" width="12.4" height="12.4"/><rect x="68.8" y="32.8" width="12.4" height="12.4"/><rect x="8.8" y="52.8" width="12.4" height="12.4"/><rect x="28.8" y="52.8" width="12.4" height="12.4"/><rect x="48.8" y="52.8" width="12.4" height="12.4"/><rect x="68.8" y="52.8" width="12.4" height="12.4"/></g><rect x="68" y="8" width="18" height="18" fill="#A8752A"/></svg></span><span class="wortmarke" aria-hidden="true"><span class="wortmarke-text">Best</span><span class="wortmarke-text">in</span><span class="wortmarke-text">Town</span></span></button></h1>
       <span class="where" id="where"></span>
     </div>
   </header>
@@ -1971,16 +1971,15 @@ function loadImg(src) {
 // Das Zeichen der App auf eine Leinwand: zwoelf Felder, eines in Messing.
 // Kein Bild, keine Fremdschrift — dieselbe Geometrie wie im Kopf.
 function drawBrandMark(ctx, x, y, breite, farbe) {
-  const k = breite / 74;                 // 74 Einheiten Tinte in der Breite
-  const ox = x - 8 * k, oy = y - 7.2 * k; // Ursprung des 90x70-Rasters
+  const k = breite / 78;                    // 78 Einheiten Tinte in der Breite
+  const ox = x - 8.8 * k, oy = y - 12.8 * k;
   ctx.save();
   ctx.strokeStyle = farbe || "#15181D";
   ctx.lineWidth = Math.max(1, 1.6 * k);
-  const r = (rx, ry, rw, rh) => ctx.strokeRect(ox + rx * k, oy + ry * k, rw * k, rh * k);
-  for (const ry of [8.8, 28.8, 48.8]) for (const rx of [8.8, 28.8, 48.8]) r(rx, ry, 12.4, 12.4);
-  r(68.8, 28.8, 12.4, 12.4); r(68.8, 48.8, 12.4, 12.4);
+  for (const ry of [12.8, 32.8, 52.8]) for (const rx of [8.8, 28.8, 48.8, 68.8])
+    ctx.strokeRect(ox + rx * k, oy + ry * k, 12.4 * k, 12.4 * k);
   ctx.fillStyle = "#A8752A";
-  ctx.fillRect(ox + 68 * k, oy + 8 * k, 14 * k, 14 * k);
+  ctx.fillRect(ox + 68 * k, oy + 8 * k, 18 * k, 18 * k);
   ctx.restore();
 }
 
@@ -4081,10 +4080,10 @@ function bestNear() {
 // Die Krone: eine eigene Karte. Oben der Stempel der App, darunter der Name.
 // Kein „Platz 1" — das hier ist kein Listenplatz, das ist der Titel.
 function crownCard(p, score) {
-  const stamp = '<svg class="marke" viewBox="8 7.2 74 54" aria-hidden="true"><g fill="none" stroke="#15181D" stroke-width="1.6">'
-    + [[8.8,8.8],[28.8,8.8],[48.8,8.8],[8.8,28.8],[28.8,28.8],[48.8,28.8],[8.8,48.8],[28.8,48.8],[48.8,48.8],[68.8,28.8],[68.8,48.8]]
+  const stamp = '<svg class="marke" viewBox="7.2 7.2 80.4 59" aria-hidden="true"><g fill="none" stroke="#15181D" stroke-width="1.6">'
+    + [[8.8,12.8],[28.8,12.8],[48.8,12.8],[68.8,12.8],[8.8,32.8],[28.8,32.8],[48.8,32.8],[68.8,32.8],[8.8,52.8],[28.8,52.8],[48.8,52.8],[68.8,52.8]]
         .map(([x, y]) => `<rect x="${x}" y="${y}" width="12.4" height="12.4"/>`).join("")
-    + '</g><rect x="68" y="8" width="14" height="14" fill="#A8752A"/></svg>';
+    + '</g><rect x="68" y="8" width="18" height="18" fill="#A8752A"/></svg>';
   const x = sentenceOf(p);
   return `<article class="crown-card" data-hero="${esc(p.id)}">
     <div class="crown-stamp" aria-hidden="true">${stamp}</div>
@@ -5652,7 +5651,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.210";
+const APP_VERSION = "1.0.211";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
