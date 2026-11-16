@@ -4,14 +4,17 @@
 <title>Best in Town · Lokal</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <!-- Auf dem Homescreen: eigenes Icon, kein Browser-Rahmen, Farbe der App -->
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#1F4B37">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#15181D">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Best in Town">
-<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="mask-icon" href="mask-icon.svg" color="#15181D">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&display=swap">
@@ -100,7 +103,7 @@ body { font-synthesis: none; }
 .brand .where-face::after { border-left-width: 8px; border-right-width: 8px; border-top-width: 9px; }
 .brand .where-face > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brand h1 { font-size:1.875rem; font-weight: 400; letter-spacing: 0; line-height: 0; }
-.stamp-logo { width: 96px; height: 96px; display: block; }
+.stamp-logo { width: 236px; height: auto; display: block; }
 .settings { position: fixed; inset: 0; z-index: 60; background: rgba(21,38,31,.42); display: grid; place-items: end center; }
 .settings[hidden] { display: none; }
 .settings-sheet { width: 100%; max-width: 560px; max-height: 82vh; overflow: auto; background: var(--paper);
@@ -311,7 +314,7 @@ body.has-homebar { padding-bottom: 110px; }
   background: linear-gradient(180deg, var(--surface), var(--surface));
   box-shadow: 0 20px 48px -26px rgba(31,75,55,.55); }
 .crown-stamp { display: grid; place-items: center; }
-.crown-stamp svg { width: 104px; height: 104px; transform: rotate(-4deg); opacity: .92; }
+.crown-stamp svg { width: 236px; height: auto; opacity: .92; }
 .crown-name { margin: 4px 0 0; font-family: var(--font-display); font-weight: 400; font-size:1.6875rem; line-height: 1.15; color: var(--ink); }
 .crown-pts { margin: 0; font-size:0.6875rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-deep, var(--gold)); }
 .crown-quote { margin: 2px 0 0; max-width: 34ch; font-size:0.9375rem; line-height: 1.4; color: var(--muted); }
@@ -1062,6 +1065,13 @@ body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 
   font:inherit; font-size:0.875rem; font-weight:600; cursor:pointer; }
 .sv-empty { margin-top:18px; font-size:0.8125rem; color: var(--muted); line-height:1.5; }
 .pv-credit { margin:8px 0 0; font-size:0.625rem; color:#8C8879; letter-spacing:.02em; }
+
+/* Kopf: Marke oben, Stadt darunter. Zwei Zeilen, damit beide lesbar bleiben —
+   in einer Zeile hat das Logo den Stadtnamen abgeschnitten. */
+.brand { grid-template-columns: minmax(0, 1fr) !important; row-gap: 10px; align-items: start; }
+.brand h1 { order: 1; justify-self: start; }
+.brand .where { order: 2; justify-content: flex-start; width: 100%; }
+.stamp-logo { width: 272px; height: auto; }
 </style>
   </div>
 </div>
@@ -1069,7 +1079,7 @@ body { padding-bottom: calc(var(--tabbar-h, 72px) + env(safe-area-inset-bottom, 
 <div class="wrap">
   <header class="mast">
     <div class="brand">
-      <h1><button type="button" class="wordmark" id="openSettings" aria-label="Einstellungen"><svg class="stamp-logo" viewBox="0 0 300 300" role="img" aria-label="Best in Town"><defs><path id="bitTop" d="M 50,150 A 100,100 0 0 1 250,150" fill="none"/><path id="bitBot" d="M 22,150 A 128,128 0 0 0 278,150" fill="none"/></defs><g fill="#1C1A16"><circle cx="150" cy="150" r="140" fill="none" stroke="#1C1A16" stroke-width="5"/><circle cx="150" cy="150" r="131" fill="none" stroke="#1C1A16" stroke-width="1.5"/><circle cx="150" cy="150" r="90" fill="none" stroke="#1C1A16" stroke-width="3"/><text font-family="Inter, sans-serif" font-weight="900" font-size="38" letter-spacing="4" text-anchor="middle"><textPath href="#bitTop" startOffset="50%">BEST IN</textPath></text><text font-family="Inter, sans-serif" font-weight="900" font-size="38" letter-spacing="4" text-anchor="middle"><textPath href="#bitBot" startOffset="50%">BEST IN</textPath></text><rect x="2" y="106" width="296" height="88" rx="12" fill="#1C1A16"/><rect x="9" y="113" width="282" height="74" rx="7" fill="none" stroke="#F6F1E7" stroke-width="1.5"/><text x="150" y="171" text-anchor="middle" font-family="Inter, sans-serif" font-weight="900" font-size="64" textLength="210" lengthAdjust="spacingAndGlyphs" fill="#F6F1E7">TOWN</text></g></svg></button></h1>
+      <h1><button type="button" class="wordmark" id="openSettings" aria-label="Einstellungen"><svg class="stamp-logo" viewBox="0 0 349.79 70" role="img" aria-label="Best in Town"><g transform="translate(8,8)"><rect x="0.800" y="0.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="20.800" y="0.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="40.800" y="0.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="60.000" y="0.000" width="14.000" height="14.000" fill="#A8752A"/><rect x="0.800" y="20.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="20.800" y="20.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="40.800" y="20.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="60.800" y="20.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="0.800" y="40.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="20.800" y="40.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="40.800" y="40.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><rect x="60.800" y="40.800" width="12.400" height="12.400" fill="none" stroke="#1C1A16" stroke-width="1.600"/><path d="M99.81342417469051 36.0H107.07921036795048C111.2017279917469 36.0 113.22067357290234 33.89642795735901 113.22067357290234 31.091665233837688C113.22067357290234 28.371528971801926 111.28635445323246 26.77571569807428 109.37621432255845 26.678999742090785V26.497657324621734C111.12919102475928 26.086614511691884 112.51948289202201 24.85348607290234 112.51948289202201 22.665287568775792C112.51948289202201 19.993509284731775 110.59725326685006 17.98665319807428 106.70443603851444 17.98665319807428H99.81342417469051ZM103.04131920563961 33.30404272696011V27.996754642365886H106.68025704951857C108.68711313617607 27.996754642365886 109.94442056396149 29.24197257565337 109.94442056396149 30.849875343878956C109.94442056396149 32.27643569463549 108.95308201513068 33.30404272696011 106.57145159903713 33.30404272696011ZM103.04131920563961 25.6634822042641V20.67052097661623H106.36593019257222C108.30024931224209 20.67052097661623 109.2915878610729 21.686038514442917 109.2915878610729 23.076330381705638C109.2915878610729 24.67214365543329 107.99801194979368 25.6634822042641 106.2933932255846 25.6634822042641Z M121.08609869325997 36.0H132.83708734525447V33.279863737964234H124.31399372420907V28.25063402682256H132.16007565337V25.566766248280608H124.31399372420907V20.70678946011004H132.78872936726273V17.98665319807428H121.08609869325997Z M147.3517344394773 36.278058373452545C151.65559448074276 36.278058373452545 154.1702093363136 34.11403885832187 154.1702093363136 30.946591299862447C154.1702093363136 27.8033227303989 151.54678903026135 26.41303086313618 148.87501074621733 25.77228765474553L147.19457101100411 25.33706585281981C145.73174217675378 24.974381017881704 144.1238394085282 24.369906292984872 144.1238394085282 22.858719480742778C144.1238394085282 21.49260660247593 145.35696784731775 20.48917855914718 147.3880029229711 20.48917855914718C149.33441153713892 20.48917855914718 150.6400769429161 21.383801151994497 150.79724037138928 22.919166953232462H153.9284194463549C153.8437929848693 19.908882823246216 151.28082015130673 17.744863308115544 147.43636090096285 17.744863308115544C143.6644386176066 17.744863308115544 140.85967589408529 19.872614339752406 140.85967589408529 23.052151392709767C140.85967589408529 25.59094523727648 142.63683158528198 27.11422154401651 145.64711571526823 27.88794919188446L147.69024028541952 28.41988694979367C149.63664889958736 28.927645718707016 150.9423143053645 29.520030949105916 150.9423143053645 30.922412310866576C150.9423143053645 32.46986760660248 149.4553064821183 33.52165362792297 147.32755545048144 33.52165362792297C145.29652037482805 33.52165362792297 143.68861760660246 32.60285204607978 143.54354367262724 30.704801409903716H140.36400661966988C140.5090805536451 34.25911279229711 143.15667984869327 36.278058373452545 147.3517344394773 36.278058373452545Z M161.27399630330123 20.70678946011004H166.83516377235213V36.0H170.06305880330123V20.70678946011004H175.6121367778542V17.98665319807428H161.27399630330123Z M197.7987770804677 17.98665319807428H194.5708820495186V36.0H197.7987770804677Z M206.3774823762036 36.0H209.6658248796424V27.053774071526824C209.6658248796424 26.050346028198074 209.55701942916096 24.15229539202201 209.4361244841816 21.92782840440165C210.64507393397525 24.273190337001374 211.32208562585973 25.55467675378267 212.2650661966988 27.06586356602476L217.88668113823937 36.0H221.5497979711142V17.98665319807428H218.27354496217333V27.440637895460796C218.27354496217333 28.54078189477304 218.34608192916096 30.366295563961486 218.46697687414033 32.10718277166438C217.68115973177444 30.305848091471802 216.89534258940856 28.93973521320495 216.2545993810179 27.91212818088033L210.02850971458048 17.98665319807428H206.3774823762036Z M240.50854324277856 20.70678946011004H246.06971071182946V36.0H249.29760574277856V20.70678946011004H254.84668371733153V17.98665319807428H240.50854324277856Z M270.32849037138925 36.24178988995873C275.0433932255846 36.24178988995873 278.58561511348006 32.82046294704264 278.58561511348006 27.005416093535075C278.58561511348006 21.178279745529572 275.0433932255846 17.744863308115544 270.32849037138925 17.744863308115544C265.60149802269603 17.744863308115544 262.04718664030264 21.178279745529572 262.04718664030264 27.005416093535075C262.04718664030264 32.80837345254471 265.60149802269603 36.24178988995873 270.32849037138925 36.24178988995873ZM270.32849037138925 33.352400704951854C267.37865371389273 33.352400704951854 265.28717116574967 31.103754728335627 265.28717116574967 27.005416093535075C265.28717116574967 22.882898469738652 267.37865371389273 20.63425249312242 270.32849037138925 20.63425249312242C273.25414803988997 20.63425249312242 275.3335410935351 22.870808975240713 275.3335410935351 27.005416093535075C275.3335410935351 31.115844222833562 273.25414803988997 33.352400704951854 270.32849037138925 33.352400704951854Z M290.2471415061898 36.0H293.94652682255844L296.5699471286107 26.050346028198074C296.9205424690509 24.7084121389271 297.15024286451165 23.306030777166438 297.3920327544704 21.81902295392022C297.658001633425 23.366478249656122 297.9118810178817 24.793038600412658 298.238297369326 26.050346028198074L300.86171767537826 36.0H304.5611029917469L309.4331692744154 17.98665319807428H305.9513948590096L303.6181224209078 27.5736223349381C303.2433480914718 29.19361459766162 302.9169317400275 31.031217761348007 302.6146943775791 32.796283958046764C302.2882780261348 31.031217761348007 301.94977218019255 29.19361459766162 301.55081886176066 27.5736223349381L299.1208304676754 17.98665319807428H295.6995035247593L293.25742563617604 27.5736223349381C292.8463828232462 29.20570409215956 292.5199664718019 31.067486244841817 292.1935501203576 32.85673143053645C291.8913127579092 31.067486244841817 291.5769859009628 29.20570409215956 291.2022115715268 27.5736223349381L288.8568496389271 17.98665319807428H285.3871647180192Z M316.8029251203576 36.0H320.0912676237964V27.053774071526824C320.0912676237964 26.050346028198074 319.98246217331496 24.15229539202201 319.8615672283356 21.92782840440165C321.07051667812925 24.273190337001374 321.7475283700137 25.55467675378267 322.6905089408528 27.06586356602476L328.31212388239334 36.0H331.97524071526817V17.98665319807428H328.69898770632733V27.440637895460796C328.69898770632733 28.54078189477304 328.77152467331496 30.366295563961486 328.8924196182943 32.10718277166438C328.1066024759284 30.305848091471802 327.3207853335625 28.93973521320495 326.6800421251719 27.91212818088033L320.4539524587345 17.98665319807428H316.8029251203576Z" fill="#1C1A16"/></g></svg></button></h1>
       <span class="where" id="where"></span>
     </div>
   </header>
@@ -1751,9 +1761,12 @@ function render() {
   const inv = $("communityInvite"), jc = $("joinCommunity");
   // Erinnerung mit Takt: 5. Start, 10. Start, danach jeder 10. Wer bis dahin
   // nicht Mitglied ist, wird selten genug erinnert, um nicht zu nerven.
-  const o = state.opens || 0;
-  const joinDue = o === 5 || (o >= 10 && o % 10 === 0);
-  if (inv) inv.hidden = !(state.sessionKnown && state.isAnonymous && joinDue);
+  // Die Erinnerung fuer Besucher ist abgeschaltet: sie erschien beim 5., 10.,
+  // 20. Start und hat auf dem iPhone die App blockiert. Der Weg zum Beitritt
+  // bleibt in den Einstellungen.
+  const joinDue = false;
+  // Der Block erscheint nur noch, wenn er aus den Einstellungen geöffnet wurde.
+  if (inv) inv.hidden = !(state.showJoin || (state.sessionKnown && state.isAnonymous && joinDue));
   if (jc) jc.hidden = !state.showJoin;
   const on = $("ownerNote");
   if (on) on.hidden = true;
@@ -2968,75 +2981,23 @@ async function ladeSchriften() {
   } catch (e) { /* Systemschrift ist der Rueckfall */ }
 }
 
-function drawStamp(g, cx, cy, r) {
-  // Der Stempel wird dreifach so groß gezeichnet und dann verkleinert: so
-  // bleiben Haarlinien und die gebogene Schrift sauber, statt zu verschmieren.
-  const faktor = 3;
-  const groesse = Math.round(r * 2 * faktor);
-  const off = document.createElement("canvas");
-  off.width = groesse; off.height = groesse;
-  const d = off.getContext("2d");
-  const k = groesse / 300;             // Zeichnen im 300er-Raster des Originals
-  d.save();
-  d.scale(k, k);
-
-  d.strokeStyle = "#1C1A16";
-  d.fillStyle = "#1C1A16";
-  d.lineWidth = 5;   d.beginPath(); d.arc(150, 150, 139.5, 0, Math.PI * 2); d.stroke();
-  d.lineWidth = 1.5; d.beginPath(); d.arc(150, 150, 130, 0, Math.PI * 2); d.stroke();
-  d.lineWidth = 3;   d.beginPath(); d.arc(150, 150, 89, 0, Math.PI * 2); d.stroke();
-
-  const bogen = (text, radius, mitte, umgedreht) => {
-    d.font = '900 38px Inter, system-ui, sans-serif';
-    d.textAlign = "center";
-    d.textBaseline = "middle";
-    const zeichen = [...text];
-    const spation = 4;
-    const breiten = zeichen.map(ch => d.measureText(ch).width + spation);
-    const gesamt = breiten.reduce((a, b) => a + b, 0) - spation;
-    const richtung = umgedreht ? -1 : 1;
-    let winkel = mitte - (gesamt / radius) / 2 * richtung;
-    zeichen.forEach((ch, i) => {
-      const schritt = (breiten[i] - spation) / radius;
-      const mitteZeichen = winkel + (schritt / 2) * richtung;
-      d.save();
-      d.translate(150 + Math.cos(mitteZeichen) * radius, 150 + Math.sin(mitteZeichen) * radius);
-      d.rotate(mitteZeichen + (umgedreht ? -Math.PI / 2 : Math.PI / 2));
-      d.fillText(ch, 0, 0);
-      d.restore();
-      winkel += (breiten[i]) / radius * richtung;
-    });
-  };
-  bogen("BEST IN", 100, -Math.PI / 2, false);
-  bogen("BEST IN", 128, Math.PI / 2, true);
-
-  d.fillStyle = "#1C1A16";
-  d.beginPath();
-  if (d.roundRect) d.roundRect(2, 106, 296, 88, 12); else d.rect(2, 106, 296, 88);
-  d.fill();
-  d.strokeStyle = "#F6F1E7"; d.lineWidth = 1.5;
-  d.beginPath();
-  if (d.roundRect) d.roundRect(9, 113, 282, 74, 7); else d.rect(9, 113, 282, 74);
-  d.stroke();
-
-  d.fillStyle = "#F6F1E7";
-  d.font = '900 64px Inter, system-ui, sans-serif';
-  d.textAlign = "center"; d.textBaseline = "middle";
-  const town = [..."TOWN"];
-  const einzel = town.map(ch => d.measureText(ch).width);
-  const summe = einzel.reduce((a, b) => a + b, 0);
-  const luecke = (210 - summe) / Math.max(1, town.length - 1);
-  let x = 150 - 105;
-  town.forEach((ch, i) => {
-    d.fillText(ch, x + einzel[i] / 2, 147);
-    x += einzel[i] + luecke;
-  });
-  d.restore();
-
+function drawMark(g, x, y, breite) {
+  // Das Zeichen der App: zwölf Felder, eines in Messing. Gezeichnet statt als
+  // Bild, damit es in jeder Größe scharf bleibt.
+  const k = breite / 90;
+  const strich = Math.max(1.2, 1.6 * k);
   g.save();
-  g.imageSmoothingEnabled = true;
-  g.imageSmoothingQuality = "high";
-  g.drawImage(off, cx - r, cy - r, r * 2, r * 2);
+  g.strokeStyle = "#1C1A16";
+  g.lineWidth = strich;
+  for (const yy of [8.8, 28.8, 48.8]) {
+    for (const xx of [8.8, 28.8, 48.8]) {
+      g.strokeRect(x + xx * k, y + yy * k, 12.4 * k, 12.4 * k);
+    }
+  }
+  g.strokeRect(x + 68.8 * k, y + 28.8 * k, 12.4 * k, 12.4 * k);
+  g.strokeRect(x + 68.8 * k, y + 48.8 * k, 12.4 * k, 12.4 * k);
+  g.fillStyle = "#A8752A";
+  g.fillRect(x + 68 * k, y + 8 * k, 14 * k, 14 * k);
   g.restore();
 }
 
@@ -3150,7 +3111,7 @@ async function buildCollage(withPhotos) {
     if (zeilen.length > 2) sichtbar[1] = sichtbar[1].replace(/[^ ]*$/, "") + "…";
     sichtbar.forEach((z, i) => g.fillText(z, pad, COLLAGE_H - 44 + i * 18));
   }
-  drawStamp(g, 906, 126, 66);   // 0,75 der vorigen Groesse: oben 60, rechts 36, unten 90 Luft
+  drawMark(g, 844, 60, 200);   // oben 60, rechts 36 — 85 Luft bis zum Raster
   // JPEG statt PNG: kein Alphakanal (das war der Schwarz-Fehler auf Android),
   // deutlich kleiner und schneller.
   return new Promise(res => c.toBlob(res, "image/jpeg", 0.95));
@@ -5684,7 +5645,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.201";
+const APP_VERSION = "1.0.204";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
@@ -5798,10 +5759,19 @@ function renderSettings() {
     const rows = (state.members || []).map(m => {
       const mail = m.email || "(ohne Adresse)";
       const ist = m.role === "supervisor" ? "Projektleitung" : m.role === "pate" ? "Pate" : "Besucher";
-      return `<div class="member"><span class="member-mail">${esc(mail)}</span><span class="member-role">${ist}</span></div>`;
+      const knopf = m.role === "supervisor" ? ""
+        : m.role === "pate" ? `<button type="button" class="btn link" data-demote="${esc(m.id)}">Zum Besucher</button>`
+        : `<button type="button" class="btn link" data-promote="${esc(m.id)}">Zum Paten</button>`;
+      return `<div class="member"><span class="member-mail">${esc(mail)}</span><span class="member-role">${ist}</span>${knopf}</div>`;
     }).join("");
+    const stand = state.membersState;
+    const hinweis = stand === "laedt" ? "Wird geladen …"
+      : stand === "langsam" ? "Keine Antwort — später erneut versuchen."
+      : stand === "fehler" ? "Konnte nicht geladen werden."
+      : stand === "offline" ? "Ohne Verbindung nicht verfügbar."
+      : "";
     html += `<div class="settings-block"><span class="settings-label">Mitglieder</span>
-      <div class="members">${rows || `<p class="settings-mail">Wird nicht mehr geladen.</p>`}</div></div>`;
+      <div class="members">${rows || `<p class="settings-mail">${esc(hinweis || "Keine Mitglieder gefunden.")}</p>`}</div></div>`;
   }
   html += `<div class="settings-links">
       <button type="button" data-set="impressum">Impressum</button>
@@ -5939,15 +5909,34 @@ function renderSettings() {
     closeSettings(); render();
   }));
 }
-// Die Mitgliederliste wird nicht mehr abgefragt: der Aufruf konnte auf
-// Android endlos hängen und blockierte dann die ganze Einstellungsseite.
-// Der Block bleibt stehen, damit die Seite vollständig wirkt.
+// Die Mitgliederliste wird geladen, aber mit Zeitgrenze: die Abfrage hing auf
+// Android ohne Antwort und blockierte die Einstellungsseite. Nach 6 s wird
+// abgebrochen und ein ruhiger Hinweis gezeigt.
 async function loadMembers() {
-  state.members = [];
+  const c = window.cloudApp;
+  if (!c) { state.members = []; state.membersState = "offline"; renderSettings(); return; }
+  state.membersState = "laedt";
+  renderSettings();
+  try {
+    const abfrage = c.supabase.from("profiles")
+      .select("id,email,role,created_at").order("created_at", { ascending: false }).limit(200);
+    const antwort = await Promise.race([
+      abfrage,
+      new Promise((_, rej) => setTimeout(() => rej(new Error("zu lang")), 6000))
+    ]);
+    const data = (antwort && antwort.data) || [];
+    // Nur echte Mitglieder: anonyme Gäste (ohne Adresse) gehören nicht in die Liste.
+    state.members = data.filter(m => m.email);
+    state.membersState = "ok";
+  } catch (e) {
+    state.members = [];
+    state.membersState = (e && e.message === "zu lang") ? "langsam" : "fehler";
+  }
+  renderSettings();
 }
 function openSettings() {
   settingsView = "main"; $("settings").hidden = false; renderSettings();
-  // bewusst kein loadMembers() mehr
+  if ((state.role || "") === "supervisor") loadMembers();
 }
 function closeSettings() { $("settings").hidden = true; settingsView = "main"; }
 $("openSettings").addEventListener("click", openSettings);
@@ -6148,10 +6137,9 @@ async function refreshRole(cloud) {
   }
   // Der Beitritts-Kasten erscheint einmal je Gerät; danach nur noch über die
   // Einstellungen. Niemand soll bei jedem Öffnen gefragt werden.
-  const JOIN_KEY = "bit.joinSeen";
-  if (state.isAnonymous && !state.showJoin && localStorage.getItem(JOIN_KEY) !== "1") state.showJoin = true;
+  // Kein automatischer Beitritts-Kasten mehr; er oeffnet nur ueber die
+  // Einstellungen ("Mitglied werden").
   $("joinCommunity").hidden = !state.isAnonymous || !state.showJoin;
-  if (!$("joinCommunity").hidden) { try { localStorage.setItem(JOIN_KEY, "1"); } catch (e) {} }
   if (!state.isAnonymous) $("signInExisting").hidden = true;
   $("localMode").hidden = true;
 }
