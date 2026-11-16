@@ -2916,63 +2916,8 @@ function roundRect(g, x, y, w, h, r) {
 
 // Der Stempel wird gezeichnet, nicht als Bild geladen: so ist er immer scharf
 // und braucht keine Schriften aus dem Netz.
-function drawStamp(g, cx, cy, r) {
-  const k = r / 150;
-  g.save();
-  g.translate(cx - 150 * k, cy - 150 * k);
-  g.scale(k, k);
-  g.strokeStyle = "#1C1A16";
-  g.lineWidth = 4.5; g.beginPath(); g.arc(150, 150, 139.5, 0, Math.PI * 2); g.stroke();
-  g.lineWidth = 1.4; g.beginPath(); g.arc(150, 150, 130, 0, Math.PI * 2); g.stroke();
-  g.lineWidth = 2.6; g.beginPath(); g.arc(150, 150, 89, 0, Math.PI * 2); g.stroke();
-
-  const arcText = (text, radius, mitte, umgedreht, groesse) => {
-    g.font = `900 ${groesse}px Inter, system-ui, sans-serif`;
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.fillStyle = "#1C1A16";
-    const zeichen = [...text];
-    const breiten = zeichen.map(ch => g.measureText(ch).width + 4);
-    const gesamt = breiten.reduce((a, b) => a + b, 0);
-    const richtung = umgedreht ? -1 : 1;
-    let a = mitte - (gesamt / radius) / 2 * richtung;
-    zeichen.forEach((ch, i) => {
-      const da = breiten[i] / radius;
-      const mitteZeichen = a + (da / 2) * richtung;
-      g.save();
-      g.translate(150 + Math.cos(mitteZeichen) * radius, 150 + Math.sin(mitteZeichen) * radius);
-      g.rotate(mitteZeichen + (umgedreht ? -Math.PI / 2 : Math.PI / 2));
-      g.fillText(ch, 0, 0);
-      g.restore();
-      a += da * richtung;
-    });
-  };
-  arcText("BEST IN", 100, -Math.PI / 2, false, 38);
-  arcText("BEST IN", 128, Math.PI / 2, true, 38);
-
-  g.fillStyle = "#1C1A16";
-  g.beginPath();
-  if (g.roundRect) g.roundRect(2, 106, 296, 88, 12); else g.rect(2, 106, 296, 88);
-  g.fill();
-  g.strokeStyle = "#F6F1E7"; g.lineWidth = 1.5;
-  g.beginPath();
-  if (g.roundRect) g.roundRect(9, 113, 282, 74, 7); else g.rect(9, 113, 282, 74);
-  g.stroke();
-  g.fillStyle = "#F6F1E7";
-  g.font = '900 64px Inter, system-ui, sans-serif';
-  g.textAlign = "center"; g.textBaseline = "middle";
-  const town = "TOWN";
-  const breiten = [...town].map(ch => g.measureText(ch).width);
-  const summe = breiten.reduce((a, b) => a + b, 0);
-  const abstand = (210 - summe) / (town.length - 1);
-  let x = 150 - 105 + breiten[0] / 2;
-  [...town].forEach((ch, i) => { g.fillText(ch, x, 146); x += breiten[i] / 2 + abstand + (breiten[i + 1] || 0) / 2; });
-  g.restore();
-}
-
-
-// Die Collage braucht keine 1280 px breiten Bilder: halbe Groesse laedt
-// viermal schneller und reicht fuer eine Kachel von ~490 px.
+// Die Collage braucht keine 1280 px breiten Bilder: die kleine Fassung laedt
+// deutlich schneller und reicht fuer eine Kachel von rund 490 px.
 function collageSrc(p) {
   const lok = localPhotoSrc(p);
   if (p.photo) return lok || photoURL(p.photo);
@@ -2982,12 +2927,12 @@ function collageSrc(p) {
   const vorschau = previewPhoto(p);
   return vorschau ? vorschau.replace(/w=\d+/, "w=800") : "";
 }
-// Bitmap statt <img>: Android-WebView decodiert createImageBitmap deutlich
-// schneller als ein Bildelement, das erst in den Baum eingehaengt wird.
+// Bitmap statt <img>: die Android-WebView decodiert createImageBitmap
+// spuerbar schneller als ein Bildelement.
 async function loadBitmap(src, ersatz) {
   try {
     const res = await fetch(src, { mode: "cors" });
-    if (!res.ok) return null;
+    if (!res.ok) return ersatz && ersatz !== src ? await loadBitmap(ersatz) : null;
     const blob = await res.blob();
     if (window.createImageBitmap) return await createImageBitmap(blob);
     return await new Promise(r => {
@@ -2998,6 +2943,79 @@ async function loadBitmap(src, ersatz) {
     return ersatz && ersatz !== src ? await loadBitmap(ersatz) : null;
   }
 }
+
+function drawStamp(g, cx, cy, r) {
+  // Der Stempel wird dreifach so groß gezeichnet und dann verkleinert: so
+  // bleiben Haarlinien und die gebogene Schrift sauber, statt zu verschmieren.
+  const faktor = 3;
+  const groesse = Math.round(r * 2 * faktor);
+  const off = document.createElement("canvas");
+  off.width = groesse; off.height = groesse;
+  const d = off.getContext("2d");
+  const k = groesse / 300;             // Zeichnen im 300er-Raster des Originals
+  d.save();
+  d.scale(k, k);
+
+  d.strokeStyle = "#1C1A16";
+  d.fillStyle = "#1C1A16";
+  d.lineWidth = 5;   d.beginPath(); d.arc(150, 150, 139.5, 0, Math.PI * 2); d.stroke();
+  d.lineWidth = 1.5; d.beginPath(); d.arc(150, 150, 130, 0, Math.PI * 2); d.stroke();
+  d.lineWidth = 3;   d.beginPath(); d.arc(150, 150, 89, 0, Math.PI * 2); d.stroke();
+
+  const bogen = (text, radius, mitte, umgedreht) => {
+    d.font = '900 38px Inter, system-ui, sans-serif';
+    d.textAlign = "center";
+    d.textBaseline = "middle";
+    const zeichen = [...text];
+    const spation = 4;
+    const breiten = zeichen.map(ch => d.measureText(ch).width + spation);
+    const gesamt = breiten.reduce((a, b) => a + b, 0) - spation;
+    const richtung = umgedreht ? -1 : 1;
+    let winkel = mitte - (gesamt / radius) / 2 * richtung;
+    zeichen.forEach((ch, i) => {
+      const schritt = (breiten[i] - spation) / radius;
+      const mitteZeichen = winkel + (schritt / 2) * richtung;
+      d.save();
+      d.translate(150 + Math.cos(mitteZeichen) * radius, 150 + Math.sin(mitteZeichen) * radius);
+      d.rotate(mitteZeichen + (umgedreht ? -Math.PI / 2 : Math.PI / 2));
+      d.fillText(ch, 0, 0);
+      d.restore();
+      winkel += (breiten[i]) / radius * richtung;
+    });
+  };
+  bogen("BEST IN", 100, -Math.PI / 2, false);
+  bogen("BEST IN", 128, Math.PI / 2, true);
+
+  d.fillStyle = "#1C1A16";
+  d.beginPath();
+  if (d.roundRect) d.roundRect(2, 106, 296, 88, 12); else d.rect(2, 106, 296, 88);
+  d.fill();
+  d.strokeStyle = "#F6F1E7"; d.lineWidth = 1.5;
+  d.beginPath();
+  if (d.roundRect) d.roundRect(9, 113, 282, 74, 7); else d.rect(9, 113, 282, 74);
+  d.stroke();
+
+  d.fillStyle = "#F6F1E7";
+  d.font = '900 64px Inter, system-ui, sans-serif';
+  d.textAlign = "center"; d.textBaseline = "middle";
+  const town = [..."TOWN"];
+  const einzel = town.map(ch => d.measureText(ch).width);
+  const summe = einzel.reduce((a, b) => a + b, 0);
+  const luecke = (210 - summe) / Math.max(1, town.length - 1);
+  let x = 150 - 105;
+  town.forEach((ch, i) => {
+    d.fillText(ch, x + einzel[i] / 2, 147);
+    x += einzel[i] + luecke;
+  });
+  d.restore();
+
+  g.save();
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = "high";
+  g.drawImage(off, cx - r, cy - r, r * 2, r * 2);
+  g.restore();
+}
+
 async function buildCollage(withPhotos) {
   resetPhotoUse();
   const list = savedPlaces();
@@ -3100,10 +3118,10 @@ async function buildCollage(withPhotos) {
     if (zeilen.length > 2) sichtbar[1] = sichtbar[1].replace(/[^ ]*$/, "") + "…";
     sichtbar.forEach((z, i) => g.fillText(z, pad, COLLAGE_H - 44 + i * 18));
   }
-  drawStamp(g, 884, 148, 88);   // oben 60, rechts 36 zur Rasterkante, unten 64 Luft zum Raster
+  drawStamp(g, 906, 126, 66);   // 0,75 der vorigen Groesse: oben 60, rechts 36, unten 90 Luft
   // JPEG statt PNG: kein Alphakanal (das war der Schwarz-Fehler auf Android),
   // deutlich kleiner und schneller.
-  return new Promise(res => c.toBlob(res, "image/jpeg", 0.92));
+  return new Promise(res => c.toBlob(res, "image/jpeg", 0.95));
 }
 async function shareCollage() {
   if (!savedPlaces().length) return;
@@ -5587,7 +5605,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.196";
+const APP_VERSION = "1.0.197";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
