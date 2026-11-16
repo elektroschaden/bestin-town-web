@@ -2220,7 +2220,7 @@ document.addEventListener("click", e => {
     state.tab = tab.dataset.tab;
     if (state.tab === "saved") state.placeView = null;
     render(); window.scrollTo({ top: 0 });
-    if (state.tab === "saved") prefetchSaved();
+    if (state.tab === "saved") { pruefePhotoCache(); prefetchSaved(); }
     return;
   }
   if (e.target.closest && e.target.closest("[data-sv-share]")) { shareSaved(); return; }
@@ -2747,7 +2747,7 @@ function areaBodyHtml(kiez) {
   const item = p => {
     const line = cleanText(p.reason || "");
     return `<button type="button" class="area-item${photoSrcOf(p) ? "" : " ohne-foto"}" data-open-place="${esc(p.id)}">
-      ${photoSrcOf(p) ? `<span class="ai-photo"><img src="${photoSrcOf(p)}" alt="" loading="lazy" draggable="false"></span>` : ""}
+      ${photoSrcOf(p) ? `<span class="ai-photo"><img src="${photoSrcOf(p)}" data-fallback="${esc(remotePhotoSrc(p))}" alt="" loading="lazy" draggable="false"></span>` : ""}
       <span class="ai-name">${esc(p.name)}</span>
       ${line ? `<span class="ai-line">${esc(line)}</span>` : ""}
     </button>`;
@@ -2799,7 +2799,7 @@ function renderDiscover() {
   }
   const rows = areas.map(a => {
     const thumbs = a.thumbs.length
-      ? a.thumbs.map(x => `<i><img src="${photoSrcOf(x)}" alt="" loading="lazy" draggable="false"></i>`).join("")
+      ? a.thumbs.map(x => `<i><img src="${photoSrcOf(x)}" data-fallback="${esc(remotePhotoSrc(x))}" alt="" loading="lazy" draggable="false"></i>`).join("")
       : `<i>${esc(a.kiez.charAt(0).toUpperCase())}</i>`;
     return `<button type="button" class="disc-row" data-area="${esc(a.kiez)}">
       <span class="disc-thumbs" aria-hidden="true">${thumbs}</span>
@@ -2826,7 +2826,7 @@ function renderPlaceView(id) {
   const saved = (state.saved || []).includes(p.id);
   // Ohne Foto keine leere Bildfläche: Der Name steht dann sofort oben. Ein
   // Platzhalter in Fotogröße würde den Ort verstecken, den man sehen will.
-  const foto = photoSrcOf(p) ? `<span class="pv-photo"><img src="${photoSrcOf(p)}" alt="" draggable="false"></span>` : "";
+  const foto = photoSrcOf(p) ? `<span class="pv-photo"><img src="${photoSrcOf(p)}" data-fallback="${esc(remotePhotoSrc(p))}" alt="" draggable="false"></span>` : "";
   return `<button type="button" class="back-btn" data-pv-back aria-label="Zurück zu ${esc(kiez)}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4.6"/><path d="M11 5.6L4.6 12 11 18.4"/></svg>
       <span>${esc(kiez)}</span></button>
@@ -2858,7 +2858,7 @@ function renderSaved() {
   }
   const gebiete = [...new Set(list.map(areaNameOf))];
   const tiles = list.map(p => `<button type="button" class="sv-tile" data-open-place="${esc(p.id)}">
-      <i>${photoSrcOf(p) ? `<img src="${photoSrcOf(p)}" alt="" loading="lazy" draggable="false">` : (CAT_ICON[mapCat(p.category)] || "")}</i>
+      <i>${photoSrcOf(p) ? `<img src="${photoSrcOf(p)}" data-fallback="${esc(remotePhotoSrc(p))}" alt="" loading="lazy" draggable="false">` : (CAT_ICON[mapCat(p.category)] || "")}</i>
       <span class="nm">${esc(p.name)}</span>
     </button>`).join("");
   return `<h1 class="sv-h">Meine Orte</h1>
@@ -2934,7 +2934,12 @@ async function loadBitmap(src, ersatz) {
     const res = await fetch(src, { mode: "cors" });
     if (!res.ok) return ersatz && ersatz !== src ? await loadBitmap(ersatz) : null;
     const blob = await res.blob();
-    if (window.createImageBitmap) return await createImageBitmap(blob);
+    if (window.createImageBitmap) {
+      // Beim Dekodieren schon begrenzen: so liegt nie ein riesiges Bild im
+      // Speicher (das war der Absturz auf dem Telefon bei mehreren Fotos).
+      try { return await createImageBitmap(blob, { resizeWidth: 960, resizeQuality: "medium" }); }
+      catch (e) { return await createImageBitmap(blob); }
+    }
     return await new Promise(r => {
       const img = new Image(); img.crossOrigin = "anonymous";
       img.onload = () => r(img); img.onerror = () => r(null); img.src = src;
@@ -2942,6 +2947,25 @@ async function loadBitmap(src, ersatz) {
   } catch (e) {
     return ersatz && ersatz !== src ? await loadBitmap(ersatz) : null;
   }
+}
+
+// document.fonts.load() kann auf Android ewig haengen (Schrift kommt aus dem
+// Netz). Genau daran blieb die Collage stehen. Deshalb mit Zeitgrenze: nach
+// 1,2 s wird mit der Systemschrift gezeichnet, statt zu warten.
+let _schriftenBereit = false;
+async function ladeSchriften() {
+  if (_schriftenBereit || !document.fonts || !document.fonts.load) return;
+  try {
+    await Promise.race([
+      Promise.all([
+        document.fonts.load('400 64px "Instrument Serif"'),
+        document.fonts.load('500 24px Inter'),
+        document.fonts.load('900 64px Inter')
+      ]).catch(() => null),
+      new Promise(r => setTimeout(r, 1200))
+    ]);
+    _schriftenBereit = true;
+  } catch (e) { /* Systemschrift ist der Rueckfall */ }
 }
 
 function drawStamp(g, cx, cy, r) {
@@ -3023,11 +3047,7 @@ async function buildCollage(withPhotos) {
   c.width = COLLAGE_W; c.height = COLLAGE_H;
   const g = c.getContext("2d");
   g.fillStyle = "#F6F1E7"; g.fillRect(0, 0, COLLAGE_W, COLLAGE_H);
-  try {
-    await document.fonts.load('400 64px "Instrument Serif"');
-    await document.fonts.load('500 24px Inter');
-    await document.fonts.load('900 64px Inter');   // der Stempel braucht die schwere Schrift
-  } catch (e) { /* Systemschrift ist der Rückfall */ }
+  await ladeSchriften();
 
   g.fillStyle = "#15261F";
   g.font = '400 64px "Instrument Serif", Georgia, serif';
@@ -3044,13 +3064,24 @@ async function buildCollage(withPhotos) {
   const gridW = COLLAGE_W - pad * 2, gridH = bottom - top;
   const cellW = (gridW - gap * (cols - 1)) / cols;
 
-  const imgs = withPhotos
-    ? await Promise.all(list.map(p => {
-        const src = collageSrc(p);
-        const c = commonsPhoto(p);
-        return src ? loadBitmap(src, c ? c.u : src) : null;
-      }))
-    : list.map(() => null);
+  // Zwei Bilder gleichzeitig, nicht alle: begrenzt Spitzenlast und Speicher.
+  const imgs = new Array(list.length).fill(null);
+  if (withPhotos) {
+    const schluessel = await Promise.all(list.map(p => {
+      const src = collageSrc(p);
+      const c = commonsPhoto(p);
+      return src ? { src, ersatz: c ? c.u : src } : null;
+    }));
+    let naechste = 0;
+    const arbeit = async () => {
+      while (naechste < schluessel.length) {
+        const i = naechste++;
+        const k = schluessel[i];
+        if (k) imgs[i] = await loadBitmap(k.src, k.ersatz);
+      }
+    };
+    await Promise.all([arbeit(), arbeit()]);
+  }
   // Mit Fotos steht der Name unter der Kachel, ohne Foto mittig darin. Daran
   // richtet sich die Kachelhöhe: so bleibt unten kein leerer Streifen.
   const unterSchrift = imgs.some(Boolean) ? 34 : 0;
@@ -3091,6 +3122,7 @@ async function buildCollage(withPhotos) {
       g.textAlign = "left";
     }
     g.restore();
+    if (img && img.close) { try { img.close(); } catch (e) {} }
     if (img) {
       g.fillStyle = "#6A675C";
       g.font = '500 22px Inter, system-ui, sans-serif';
@@ -3128,8 +3160,16 @@ async function shareCollage() {
   const knopf = document.querySelector("[data-sv-collage]");
   const alt = knopf ? knopf.textContent : "";
   if (knopf) { knopf.disabled = true; knopf.textContent = "Collage wird erstellt …"; }
-  try { await shareCollageInner(); }
-  finally { if (knopf && knopf.isConnected) { knopf.disabled = false; knopf.textContent = alt; } }
+  try {
+    await Promise.race([
+      shareCollageInner(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("zu lang")), 25000))
+    ]);
+  } catch (e) {
+    toast("Collage hat zu lange gebraucht.");
+  } finally {
+    if (knopf && knopf.isConnected) { knopf.disabled = false; knopf.textContent = alt; }
+  }
 }
 async function shareCollageInner() {
   let blob = null;
@@ -3152,6 +3192,32 @@ async function shareCollageInner() {
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     toast("Collage gespeichert.");
   } catch (e) { toast("Collage hat nicht geklappt."); }
+}
+
+
+// Nach einer Neuinstallation zeigt der gespeicherte Pfad in den alten
+// App-Container — die Datei ist dann weg. Deshalb wird der Vorrat beim Start
+// geprueft: was nicht mehr da ist, fliegt raus und wird neu geladen.
+async function pruefePhotoCache() {
+  const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+  if (!FS) return;
+  const m = photoCache();
+  const ids = Object.keys(m);
+  if (!ids.length) return;
+  let geaendert = false;
+  for (const id of ids) {
+    const name = String(id).replace(/[^a-zA-Z0-9_.-]/g, "_");
+    let da = true;
+    try {
+      await FS.stat({ path: "fotos/" + name + ".jpg", directory: "DATA" });
+    } catch (e) { da = false; }
+    if (!da) { delete m[id]; geaendert = true; }
+  }
+  if (geaendert) {
+    try { localStorage.setItem(PHOTO_CACHE_KEY, JSON.stringify(m)); } catch (e) {}
+    if (state.tab === "saved" || state.placeView) render();
+    prefetchSaved();
+  }
 }
 
 // Beim Oeffnen von "Meine Orte" werden die Bilder der gemerkten Orte im
@@ -3493,6 +3559,19 @@ function commonsCredit(p) {
   if (c.l) teile.push(c.l);
   return teile.join(" · ");
 }
+
+// Faellt ein lokales Bild aus (Datei weg, neuer App-Container nach einer
+// Neuinstallation), wird sofort die Netzfassung nachgeladen. Ohne das bleibt
+// die Kachel leer und niemand weiss, warum.
+document.addEventListener("error", e => {
+  const img = e.target;
+  if (!img || img.tagName !== "IMG") return;
+  const ersatz = img.dataset.fallback;
+  if (ersatz && img.src !== ersatz) {
+    img.dataset.fallback = "";
+    img.src = ersatz;
+  }
+}, true);
 
 // ---------- Fotos auf dem Geraet ----------
 // Beim Merken wird das Bild einmal geladen, auf 900 px gebracht und abgelegt.
@@ -5605,7 +5684,7 @@ function bindSuggestions(root) {
 // Ziehen-und-Loslassen (Maus + Touch einheitlich über Pointer Events) zum
 // Umsortieren innerhalb einer Rubrik — ersetzt die früheren ↑/↓-Tasten.
 
-const APP_VERSION = "1.0.197";
+const APP_VERSION = "1.0.201";
 const LEGAL = {
   impressum: `
     <p><b>Jörg Schweinbenz Rabe</b><br>Hoher Weg 5<br>12587 Berlin<br>Deutschland</p>
@@ -5719,13 +5798,10 @@ function renderSettings() {
     const rows = (state.members || []).map(m => {
       const mail = m.email || "(ohne Adresse)";
       const ist = m.role === "supervisor" ? "Projektleitung" : m.role === "pate" ? "Pate" : "Besucher";
-      const btn = m.role === "supervisor" ? ""
-        : m.role === "pate" ? `<button type="button" class="btn" data-demote="${esc(m.id)}">Zum Besucher</button>`
-        : `<button type="button" class="btn primary" data-promote="${esc(m.id)}">Zum Paten</button>`;
-      return `<div class="member"><span class="member-mail">${esc(mail)}</span><span class="member-role">${ist}</span>${btn}</div>`;
+      return `<div class="member"><span class="member-mail">${esc(mail)}</span><span class="member-role">${ist}</span></div>`;
     }).join("");
     html += `<div class="settings-block"><span class="settings-label">Mitglieder</span>
-      <div class="members">${rows || `<p class="settings-mail">Wird geladen …</p>`}</div></div>`;
+      <div class="members">${rows || `<p class="settings-mail">Wird nicht mehr geladen.</p>`}</div></div>`;
   }
   html += `<div class="settings-links">
       <button type="button" data-set="impressum">Impressum</button>
@@ -5863,19 +5939,15 @@ function renderSettings() {
     closeSettings(); render();
   }));
 }
+// Die Mitgliederliste wird nicht mehr abgefragt: der Aufruf konnte auf
+// Android endlos hängen und blockierte dann die ganze Einstellungsseite.
+// Der Block bleibt stehen, damit die Seite vollständig wirkt.
 async function loadMembers() {
-  const c = window.cloudApp; if (!c) return;
-  try {
-    const { data } = await c.supabase.from("profiles")
-      .select("id,email,role,created_at").order("created_at", { ascending: false }).limit(200);
-    // Nur echte Mitglieder: anonyme Gäste (ohne Adresse) gehören nicht in die Liste.
-    state.members = (data || []).filter(m => m.email);
-  } catch (e) { state.members = []; }
-  renderSettings();
+  state.members = [];
 }
 function openSettings() {
   settingsView = "main"; $("settings").hidden = false; renderSettings();
-  if ((state.role || "") === "supervisor") loadMembers();
+  // bewusst kein loadMembers() mehr
 }
 function closeSettings() { $("settings").hidden = true; settingsView = "main"; }
 $("openSettings").addEventListener("click", openSettings);
